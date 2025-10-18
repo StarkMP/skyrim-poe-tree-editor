@@ -1,0 +1,39 @@
+{
+  "width": 2000,
+  "height": 5000,
+  "nodes": {
+    "fire_start": {
+      "type": 0,
+      "title": "Власть огня",
+      "description": "fire_power",
+      "keywords": ["огонь", "урон"],
+      "gameId": "azFirePower01",
+      "requiredLevel": 5,
+      "x": 300,
+      "y": 500,
+      "connections": ["fire_dmg_1", "fire_dmg_2"]
+    },
+    "fire_dmg_1": {
+      "type": 0,
+      "title": "Огненный урон I",
+      "description": "fire_damage_1",
+      "keywords": ["огонь", "урон"],
+      "gameId": "azFireDamage01",
+      "requiredLevel": 1,
+      "x": 200,
+      "y": 600,
+      "connections": ["fire_start"]
+    },
+    "fire_dmg_2": {
+      "type": 0,
+      "title": "Огненный урон II",
+      "description": "fire_damage_2",
+      "keywords": ["огонь", "урон"],
+      "gameId": "azFireDamage02",
+      "requiredLevel": 10,
+      "x": 400,
+      "y": 600,
+      "connections": ["fire_start"]
+    }
+  }
+}

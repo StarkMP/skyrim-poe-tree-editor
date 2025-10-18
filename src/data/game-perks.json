@@ -1,0 +1,20 @@
+[
+  {
+    "id": "azFirePower01",
+    "name": "Власть огня",
+    "description": "fire_power",
+    "requiredLevel": 5
+  },
+  {
+    "id": "azFireDamage01",
+    "name": "Огненный урон I",
+    "description": "fire_damage_1",
+    "requiredLevel": 1
+  },
+  {
+    "id": "azFireDamage02",
+    "name": "Огненный урон II",
+    "description": "fire_damage_2",
+    "requiredLevel": 10
+  }
+]

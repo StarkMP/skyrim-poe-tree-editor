@@ -1,47 +1,84 @@
+/* eslint-disable unicorn/no-nested-ternary */
 import { ArrowUp, Download, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { PanelSection } from '../ui/panel-section';
+import { Button } from '@/components/ui/button';
+import { PanelSection } from '@/components/ui/panel-section';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useStore } from '@/store';
 
-export const SettingsPanel = () => (
-  <div className="size-full bg-background border-l flex flex-col gap-3 py-2">
-    <div className="text-xs text-center border-b pb-2">Панель управления</div>
+import { ExportDialog } from './export-dialog';
+import { ImageSettings } from './image-settings';
+import { ImportDialog } from './import-dialog';
+import { NodeSettings } from './node-settings';
 
-    <PanelSection>
-      <div className="flex flex-wrap justify-center gap-2">
-        <Button size="sm">
-          <ArrowUp /> Импорт
-        </Button>
-        <Button size="sm" variant="secondary" disabled>
-          <Download /> Экспорт
-        </Button>
-        <Button size="sm" variant="destructive" disabled className="p-0 size-6">
-          <Trash2 />
-        </Button>
+export const SettingsPanel = () => {
+  const selectedElement = useStore((state) => state.selectedElement);
+  const nodes = useStore((state) => state.nodes);
+  const images = useStore((state) => state.images);
+  const clearAll = useStore((state) => state.clearAll);
+
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+
+  const selectedNode = selectedElement?.type === 'node' ? nodes[selectedElement.id] : null;
+  const selectedImage = selectedElement?.type === 'image' ? images[selectedElement.id] : null;
+
+  const hasElements = Object.keys(nodes).length > 0 || Object.keys(images).length > 0;
+
+  const handleClear = () => {
+    if (confirm('Вы уверены, что хотите очистить всю ветку? Это действие нельзя отменить.')) {
+      clearAll();
+    }
+  };
+
+  return (
+    <>
+      <div className="size-full bg-background border-l flex flex-col gap-3 py-2">
+        <div className="text-xs text-center border-b pb-2">Панель управления</div>
+
+        <PanelSection>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button size="sm" onClick={() => setImportDialogOpen(true)}>
+              <ArrowUp /> Импорт
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={!hasElements}
+              onClick={() => setExportDialogOpen(true)}
+            >
+              <Download /> Экспорт
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={!hasElements}
+              className="p-0 size-6"
+              onClick={handleClear}
+            >
+              <Trash2 />
+            </Button>
+          </div>
+        </PanelSection>
+
+        <ScrollArea className="flex-1">
+          {selectedNode && selectedElement ? (
+            <NodeSettings nodeId={selectedElement.id} node={selectedNode} />
+          ) : selectedImage && selectedElement ? (
+            <ImageSettings imageId={selectedElement.id} image={selectedImage} />
+          ) : (
+            <PanelSection>
+              <span className="text-center text-xs opacity-50">
+                Выделите элемент для редактирования или нажмите ПКМ по viewport для создания нового
+              </span>
+            </PanelSection>
+          )}
+        </ScrollArea>
       </div>
-    </PanelSection>
-    <PanelSection>
-      <div className="flex flex-col gap-2 w-full">
-        <div className="grid grid-cols-[1fr_1fr] items-center gap-4">
-          <Label htmlFor="width" className="text-xs">
-            Ширина
-          </Label>
-          <Input disabled id="width" defaultValue={300} />
-        </div>
-        <div className="grid grid-cols-[1fr_1fr] items-center gap-4">
-          <Label htmlFor="height" className="text-xs">
-            Высота
-          </Label>
-          <Input disabled id="height" defaultValue={200} />
-        </div>
-      </div>
-    </PanelSection>
-    <PanelSection>
-      <span className="text-center text-xs opacity-50">
-        Выделите элемент для редактирования или нажмите ПКМ по viewport для создания нового
-      </span>
-    </PanelSection>
-  </div>
-);
+
+      <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} />
+      <ExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
+    </>
+  );
+};

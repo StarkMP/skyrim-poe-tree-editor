@@ -21,7 +21,7 @@
       "@/*": ["./src/*"]
     }
   },
-  "exclude": ["node_modules", "__tests__", "dist"],
+  "exclude": ["node_modules", "__tests__", "dist", "src/__perks-tree-ingame-component__"],
   "include": [
     "src/**/*",
     "src/**/*.json",

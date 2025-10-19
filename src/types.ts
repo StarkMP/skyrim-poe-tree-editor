@@ -39,8 +39,6 @@ export type EditorImage = {
 export type EditorImages = { [uid: string]: EditorImage };
 
 export type EditorData = {
-  width: number;
-  height: number;
   nodes: EditorNodes;
   images: EditorImages;
 };

@@ -73,6 +73,7 @@
     "react-resizable-panels": "^3.0.6",
     "tailwindcss-animate": "^1.0.7",
     "throttle-debounce": "5.0.2",
+    "use-image": "^1.1.4",
     "zustand": "5.0.8"
   }
 }

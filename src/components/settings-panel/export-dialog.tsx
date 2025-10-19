@@ -181,7 +181,11 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         const x = image.x - bounds.x;
         const y = image.y - bounds.y;
 
+        // Apply opacity (default 1)
+        ctx.globalAlpha = image.opacity ?? 1;
         ctx.drawImage(img, x, y, image.width, image.height);
+        // Reset globalAlpha
+        ctx.globalAlpha = 1;
       } catch (error) {
         console.error(`Failed to load background image: ${image.imageUrl}`, error);
       }

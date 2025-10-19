@@ -13,7 +13,7 @@ export const PanelSection = ({
   children: ReactNode;
 }) => (
   <div className={cn('flex flex-col gap-2 border-b p-3 pt-0', className)}>
-    {title ? <span className="text-xs font-semibold">{title}</span> : null}
+    {title ? <span className="text-sm font-semibold">{title}</span> : null}
     {children}
   </div>
 );

@@ -115,32 +115,34 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
             </Select>
           </div>
 
-          {/* Position X */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="node-x" className="text-xs">
-              X
-            </Label>
-            <Input
-              id="node-x"
-              type="number"
-              value={Math.round(node.x)}
-              disabled
-              className="h-8 text-xs"
-            />
-          </div>
+          <div className="w-full grid grid-cols-2 gap-2">
+            {/* Position X */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="node-x" className="text-xs">
+                X
+              </Label>
+              <Input
+                id="node-x"
+                type="number"
+                value={Math.round(node.x)}
+                disabled
+                className="h-8 text-xs"
+              />
+            </div>
 
-          {/* Position Y */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="node-y" className="text-xs">
-              Y
-            </Label>
-            <Input
-              id="node-y"
-              type="number"
-              value={Math.round(node.y)}
-              disabled
-              className="h-8 text-xs"
-            />
+            {/* Position Y */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="node-y" className="text-xs">
+                Y
+              </Label>
+              <Input
+                id="node-y"
+                type="number"
+                value={Math.round(node.y)}
+                disabled
+                className="h-8 text-xs"
+              />
+            </div>
           </div>
 
           {/* Perk */}
@@ -222,7 +224,12 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
                 className="h-8 text-xs flex-1"
                 placeholder="https://example.com/icon.png"
               />
-              <Button size="sm" onClick={validateAndApplyIconUrl} className="h-8 text-xs">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={validateAndApplyIconUrl}
+                className="h-8 text-xs"
+              >
                 Применить
               </Button>
             </div>

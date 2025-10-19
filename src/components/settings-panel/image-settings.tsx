@@ -99,7 +99,12 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
                 className="h-8 text-xs flex-1"
                 placeholder="https://example.com/background.png"
               />
-              <Button size="sm" onClick={validateAndApplyImageUrl} className="h-8 text-xs">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={validateAndApplyImageUrl}
+                className="h-8 text-xs"
+              >
                 Применить
               </Button>
             </div>
@@ -108,62 +113,66 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
             ) : null}
           </div>
 
-          {/* Position X */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="image-x" className="text-xs">
-              X
-            </Label>
-            <Input
-              id="image-x"
-              type="number"
-              value={Math.round(image.x)}
-              disabled
-              className="h-8 text-xs"
-            />
+          <div className="w-full grid grid-cols-2 gap-2">
+            {/* Position X */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="image-x" className="text-xs">
+                X
+              </Label>
+              <Input
+                id="image-x"
+                type="number"
+                value={Math.round(image.x)}
+                disabled
+                className="h-8 text-xs"
+              />
+            </div>
+
+            {/* Position Y */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="image-y" className="text-xs">
+                Y
+              </Label>
+              <Input
+                id="image-y"
+                type="number"
+                value={Math.round(image.y)}
+                disabled
+                className="h-8 text-xs"
+              />
+            </div>
           </div>
 
-          {/* Position Y */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="image-y" className="text-xs">
-              Y
-            </Label>
-            <Input
-              id="image-y"
-              type="number"
-              value={Math.round(image.y)}
-              disabled
-              className="h-8 text-xs"
-            />
-          </div>
+          <div className="w-full grid grid-cols-2 gap-2">
+            {/* Width */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="image-width" className="text-xs">
+                Ширина
+              </Label>
+              <Input
+                id="image-width"
+                type="number"
+                value={image.width}
+                onChange={(e) => handleWidthChange(e.target.value)}
+                className="h-8 text-xs"
+                min="1"
+              />
+            </div>
 
-          {/* Width */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="image-width" className="text-xs">
-              Ширина
-            </Label>
-            <Input
-              id="image-width"
-              type="number"
-              value={image.width}
-              onChange={(e) => handleWidthChange(e.target.value)}
-              className="h-8 text-xs"
-              min="1"
-            />
-          </div>
-
-          {/* Height */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="image-height" className="text-xs">
-              Высота
-            </Label>
-            <Input
-              id="image-height"
-              type="number"
-              value={image.height}
-              onChange={(e) => handleHeightChange(e.target.value)}
-              className="h-8 text-xs"
-              min="1"
-            />
+            {/* Height */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="image-height" className="text-xs">
+                Высота
+              </Label>
+              <Input
+                id="image-height"
+                type="number"
+                value={image.height}
+                onChange={(e) => handleHeightChange(e.target.value)}
+                className="h-8 text-xs"
+                min="1"
+              />
+            </div>
           </div>
 
           {/* Opacity */}

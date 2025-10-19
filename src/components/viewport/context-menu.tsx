@@ -1,4 +1,4 @@
-import { Hexagon, Image, Spline, Trash2 } from 'lucide-react';
+import { Hexagon, Image, Link2Off, Spline, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 type ContextMenuProps = {
@@ -9,6 +9,7 @@ type ContextMenuProps = {
   onCreateNode: () => void;
   onCreateImage: () => void;
   onStartConnection: (nodeId: string) => void;
+  onRemoveAllConnections: (nodeId: string) => void;
   onDeleteNode: (nodeId: string) => void;
   onDeleteImage: (imageId: string) => void;
   onClose: () => void;
@@ -22,6 +23,7 @@ export const ContextMenu = ({
   onCreateNode,
   onCreateImage,
   onStartConnection,
+  onRemoveAllConnections,
   onDeleteNode,
   onDeleteImage,
   onClose,
@@ -71,6 +73,13 @@ export const ContextMenu = ({
             >
               <Spline size={16} />
               Создать соединение
+            </button>
+            <button
+              className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors"
+              onClick={() => handleItemClick(() => onRemoveAllConnections(targetId))}
+            >
+              <Link2Off size={16} />
+              Разорвать все связи
             </button>
             <button
               className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-destructive hover:bg-accent transition-colors"

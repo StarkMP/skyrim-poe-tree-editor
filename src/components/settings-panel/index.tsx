@@ -3,6 +3,14 @@ import { ArrowUp, Download, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { PanelSection } from '@/components/ui/panel-section';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useStore } from '@/store';
@@ -13,13 +21,11 @@ import { ImportDialog } from './import-dialog';
 import { NodeSettings } from './node-settings';
 
 export const SettingsPanel = () => {
-  const selectedElement = useStore((state) => state.selectedElement);
-  const nodes = useStore((state) => state.nodes);
-  const images = useStore((state) => state.images);
-  const clearAll = useStore((state) => state.clearAll);
+  const { selectedElement, nodes, images, clearAll } = useStore();
 
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
   const selectedNode = selectedElement?.type === 'node' ? nodes[selectedElement.id] : null;
   const selectedImage = selectedElement?.type === 'image' ? images[selectedElement.id] : null;
@@ -27,9 +33,8 @@ export const SettingsPanel = () => {
   const hasElements = Object.keys(nodes).length > 0 || Object.keys(images).length > 0;
 
   const handleClear = () => {
-    if (confirm('Вы уверены, что хотите очистить всю ветку? Это действие нельзя отменить.')) {
-      clearAll();
-    }
+    clearAll();
+    setClearDialogOpen(false);
   };
 
   return (
@@ -55,7 +60,7 @@ export const SettingsPanel = () => {
               variant="destructive"
               disabled={!hasElements}
               className="p-0 size-6"
-              onClick={handleClear}
+              onClick={() => setClearDialogOpen(true)}
             >
               <Trash2 />
             </Button>
@@ -79,6 +84,26 @@ export const SettingsPanel = () => {
 
       <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} />
       <ExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
+
+      {/* Clear confirmation dialog */}
+      <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Подтверждение очистки</DialogTitle>
+            <DialogDescription>
+              Вы уверены, что хотите очистить всю ветку? Это действие нельзя отменить.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClearDialogOpen(false)}>
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={handleClear}>
+              Очистить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

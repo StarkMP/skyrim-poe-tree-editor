@@ -39,7 +39,12 @@ export const ConnectionLine = ({ from, to, onDelete, opacity = 1 }: ConnectionLi
 
       {/* Delete button (visible on hover) */}
       {isHovered ? (
-        <Group x={midPoint.x} y={midPoint.y}>
+        <Group
+          x={midPoint.x}
+          y={midPoint.y}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           {/* Background circle */}
           <Circle radius={12} fill="white" stroke="red" strokeWidth={2} onClick={onDelete} />
 

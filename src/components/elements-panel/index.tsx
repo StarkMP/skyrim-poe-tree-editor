@@ -1,16 +1,19 @@
-import { MoveRight, Trash2 } from 'lucide-react';
+import { Search, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useStore } from '@/store';
 
 export const ElementsPanel = () => {
-  const nodes = useStore((state) => state.nodes);
-  const images = useStore((state) => state.images);
-  const selectedElement = useStore((state) => state.selectedElement);
-  const selectElement = useStore((state) => state.selectElement);
-  const deleteNode = useStore((state) => state.deleteNode);
-  const deleteImage = useStore((state) => state.deleteImage);
+  const {
+    nodes,
+    images,
+    selectedElement,
+    selectElement,
+    deleteNode,
+    deleteImage,
+    requestCenterOnElement,
+  } = useStore();
 
   const elements: Array<{ id: string; type: 'node' | 'image'; label: string }> = [
     ...Object.keys(nodes).map((id) => ({
@@ -26,8 +29,8 @@ export const ElementsPanel = () => {
   ];
 
   const handleCenterOnElement = (id: string, type: 'node' | 'image') => {
-    // TODO: Implement centering in viewport
     selectElement(id, type);
+    requestCenterOnElement(id, type);
   };
 
   const handleDelete = (id: string, type: 'node' | 'image') => {
@@ -39,11 +42,11 @@ export const ElementsPanel = () => {
   };
 
   return (
-    <div className="size-full bg-background border-r flex flex-col gap-3 py-2">
-      <div className="text-xs text-center border-b pb-2">Список элементов</div>
+    <div className="size-full bg-background border-r flex flex-col py-2">
+      <div className="text-xs text-center border-b pb-2 mb-3">Список элементов</div>
 
-      <ScrollArea className="flex-1 px-2">
-        <div className="flex flex-col gap-1">
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="flex flex-col gap-1 px-2">
           {elements.length === 0 ? (
             <div className="text-xs text-center text-muted-foreground py-4">
               Нет элементов. Создайте ноду или изображение через ПКМ во viewport.
@@ -69,7 +72,7 @@ export const ElementsPanel = () => {
                     handleCenterOnElement(element.id, element.type);
                   }}
                 >
-                  <MoveRight className="h-3 w-3" />
+                  <Search className="h-3 w-3" />
                 </Button>
                 <Button
                   size="sm"

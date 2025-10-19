@@ -34,13 +34,22 @@ export type EditorImage = {
   x: number;
   y: number;
   imageUrl: string;
+  opacity?: number; // 0-1, default 1
+  rotation?: number; // degrees, default 0
 };
 
 export type EditorImages = { [uid: string]: EditorImage };
 
+export type ViewportState = {
+  x: number;
+  y: number;
+  scale: number;
+};
+
 export type EditorData = {
   nodes: EditorNodes;
   images: EditorImages;
+  viewport?: ViewportState;
 };
 
 export type ExportNode = {

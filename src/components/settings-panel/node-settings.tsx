@@ -21,8 +21,7 @@ type NodeSettingsProps = {
 };
 
 export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
-  const updateNode = useStore((state) => state.updateNode);
-  const gamePerks = useStore((state) => state.gamePerks);
+  const { updateNode, gamePerks } = useStore();
 
   const [iconUrlInput, setIconUrlInput] = useState(node.iconUrl);
   const [iconUrlError, setIconUrlError] = useState('');

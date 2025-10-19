@@ -43,22 +43,60 @@ export const Viewport = () => {
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [draggingNodePos, setDraggingNodePos] = useState<{ x: number; y: number } | null>(null);
 
-  const nodes = useStore((state) => state.nodes);
-  const images = useStore((state) => state.images);
-  const selectedElement = useStore((state) => state.selectedElement);
-  const selectElement = useStore((state) => state.selectElement);
-  const addNode = useStore((state) => state.addNode);
-  const addImage = useStore((state) => state.addImage);
-  const deleteNode = useStore((state) => state.deleteNode);
-  const deleteImage = useStore((state) => state.deleteImage);
-  const addConnection = useStore((state) => state.addConnection);
-  const removeConnection = useStore((state) => state.removeConnection);
-  const loadFromLocalStorage = useStore((state) => state.loadFromLocalStorage);
+  const {
+    nodes,
+    images,
+    selectedElement,
+    viewportCenterRequest,
+    viewport,
+    selectElement,
+    addNode,
+    addImage,
+    deleteNode,
+    deleteImage,
+    addConnection,
+    removeConnection,
+    removeAllConnections,
+    updateViewport,
+  } = useStore();
 
-  // Load data from localStorage on mount
+  // Apply saved viewport state
   useEffect(() => {
-    loadFromLocalStorage();
-  }, [loadFromLocalStorage]);
+    const stage = stageRef.current;
+    if (!stage || !viewport) return;
+
+    stage.position({ x: viewport.x, y: viewport.y });
+    stage.scale({ x: viewport.scale, y: viewport.scale });
+    stage.batchDraw();
+  }, [viewport, stageSize]);
+
+  // Handle viewport centering requests
+  useEffect(() => {
+    if (!viewportCenterRequest || !stageRef.current) return;
+
+    const { id, type } = viewportCenterRequest;
+    const stage = stageRef.current;
+
+    let elementX = 0;
+    let elementY = 0;
+
+    if (type === 'node' && nodes[id]) {
+      elementX = nodes[id].x;
+      elementY = nodes[id].y;
+    } else if (type === 'image' && images[id]) {
+      elementX = images[id].x + images[id].width / 2;
+      elementY = images[id].y + images[id].height / 2;
+    } else {
+      return;
+    }
+
+    const scale = stage.scaleX();
+    const newX = stageSize.width / 2 - elementX * scale;
+    const newY = stageSize.height / 2 - elementY * scale;
+
+    stage.position({ x: newX, y: newY });
+    stage.batchDraw();
+  }, [viewportCenterRequest]);
 
   // Set initial size and handle resize
   useEffect(() => {
@@ -103,6 +141,27 @@ export const Viewport = () => {
     };
 
     stage.position(newPos);
+
+    // Save viewport state
+    updateViewport({
+      x: newPos.x,
+      y: newPos.y,
+      scale: newScale,
+    });
+  };
+
+  const handleDragEnd = () => {
+    // Save viewport state after dragging
+    const stage = stageRef.current;
+    if (stage) {
+      const pos = stage.position();
+      const scale = stage.scaleX();
+      updateViewport({
+        x: pos.x,
+        y: pos.y,
+        scale,
+      });
+    }
   };
 
   // Handle context menu
@@ -183,6 +242,11 @@ export const Viewport = () => {
     setContextMenu(null);
   };
 
+  const handleRemoveAllConnections = (nodeId: string) => {
+    removeAllConnections(nodeId);
+    setContextMenu(null);
+  };
+
   const handleDeleteNode = (nodeId: string) => {
     deleteNode(nodeId);
     setContextMenu(null);
@@ -255,6 +319,7 @@ export const Viewport = () => {
         height={stageSize.height}
         draggable={!isDraggingElement}
         onWheel={handleWheel}
+        onDragEnd={handleDragEnd}
         onContextMenu={handleContextMenu}
         onMouseMove={handleMouseMove}
         onClick={handleStageClick}
@@ -351,6 +416,7 @@ export const Viewport = () => {
           onCreateNode={handleCreateNode}
           onCreateImage={handleCreateImage}
           onStartConnection={handleStartConnection}
+          onRemoveAllConnections={handleRemoveAllConnections}
           onDeleteNode={handleDeleteNode}
           onDeleteImage={handleDeleteImage}
           onClose={() => setContextMenu(null)}

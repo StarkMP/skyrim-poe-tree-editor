@@ -24,7 +24,7 @@ export const BackgroundImage = ({
   onDragStart,
   onDragEnd,
 }: BackgroundImageProps) => {
-  const updateImage = useStore((state) => state.updateImage);
+  const { updateImage } = useStore();
   const [imageElement] = useImage(image.imageUrl || '', 'anonymous');
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
@@ -46,6 +46,9 @@ export const BackgroundImage = ({
     onSelect();
   };
 
+  const opacity = image.opacity ?? 1;
+  const rotation = image.rotation ?? 0;
+
   return (
     <Group
       x={image.x}
@@ -56,20 +59,29 @@ export const BackgroundImage = ({
       onContextMenu={handleContextMenu}
       onClick={handleClick}
     >
-      {/* Border rectangle (always visible) */}
-      <Rect
-        width={image.width}
-        height={image.height}
-        stroke={isSelected ? '#FFD700' : '#404040'}
-        strokeWidth={isSelected ? 4 : 2}
-        fill="transparent"
-        dash={imageElement ? undefined : [10, 5]}
-      />
+      <Group
+        offsetX={image.width / 2}
+        offsetY={image.height / 2}
+        x={image.width / 2}
+        y={image.height / 2}
+        rotation={rotation}
+      >
+        {/* Border rectangle (always visible) */}
+        <Rect
+          width={image.width}
+          height={image.height}
+          stroke={isSelected ? '#FFD700' : '#404040'}
+          strokeWidth={isSelected ? 4 : 2}
+          fill="transparent"
+          dash={imageElement ? undefined : [10, 5]}
+          opacity={opacity}
+        />
 
-      {/* Image (if loaded) */}
-      {imageElement ? (
-        <Image image={imageElement} width={image.width} height={image.height} />
-      ) : null}
+        {/* Image (if loaded) */}
+        {imageElement ? (
+          <Image image={imageElement} width={image.width} height={image.height} opacity={opacity} />
+        ) : null}
+      </Group>
     </Group>
   );
 };

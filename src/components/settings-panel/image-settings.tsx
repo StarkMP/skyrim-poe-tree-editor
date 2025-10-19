@@ -13,7 +13,7 @@ type ImageSettingsProps = {
 };
 
 export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
-  const updateImage = useStore((state) => state.updateImage);
+  const { updateImage } = useStore();
 
   const [imageUrlInput, setImageUrlInput] = useState(image.imageUrl);
   const [imageUrlError, setImageUrlError] = useState('');
@@ -29,6 +29,20 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
     const height = Number.parseInt(value);
     if (!Number.isNaN(height) && height > 0) {
       updateImage(imageId, { height });
+    }
+  };
+
+  const handleOpacityChange = (value: string) => {
+    const opacity = Number.parseFloat(value);
+    if (!Number.isNaN(opacity) && opacity >= 0 && opacity <= 1) {
+      updateImage(imageId, { opacity });
+    }
+  };
+
+  const handleRotationChange = (value: string) => {
+    const rotation = Number.parseFloat(value);
+    if (!Number.isNaN(rotation)) {
+      updateImage(imageId, { rotation });
     }
   };
 
@@ -143,6 +157,38 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
               onChange={(e) => handleHeightChange(e.target.value)}
               className="h-8 text-xs"
               min="1"
+            />
+          </div>
+
+          {/* Opacity */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="image-opacity" className="text-xs">
+              Прозрачность (0-1)
+            </Label>
+            <Input
+              id="image-opacity"
+              type="number"
+              value={image.opacity ?? 1}
+              onChange={(e) => handleOpacityChange(e.target.value)}
+              className="h-8 text-xs"
+              min="0"
+              max="1"
+              step="0.1"
+            />
+          </div>
+
+          {/* Rotation */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="image-rotation" className="text-xs">
+              Поворот (градусы)
+            </Label>
+            <Input
+              id="image-rotation"
+              type="number"
+              value={image.rotation ?? 0}
+              onChange={(e) => handleRotationChange(e.target.value)}
+              className="h-8 text-xs"
+              step="1"
             />
           </div>
         </div>

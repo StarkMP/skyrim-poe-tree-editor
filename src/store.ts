@@ -10,14 +10,34 @@ import {
   EditorNodes,
   GamePerksData,
   NodeType,
+  ViewportState,
 } from './types';
 
 const STORAGE_KEY = 'skyrim-poe-tree-editor-data';
+const MAX_UNDO_STACK_SIZE = 50;
 
 type SelectedElement = {
   id: string;
   type: 'node' | 'image';
 } | null;
+
+type ViewportCenterRequest = {
+  id: string;
+  type: 'node' | 'image';
+  timestamp: number;
+} | null;
+
+// Undo action types - each represents a reversible operation
+type UndoAction =
+  | { type: 'ADD_NODE'; nodeId: string }
+  | { type: 'DELETE_NODE'; nodeId: string; nodeData: EditorNode }
+  | { type: 'UPDATE_NODE'; nodeId: string; previousData: Partial<EditorNode> }
+  | { type: 'ADD_CONNECTION'; fromId: string; toId: string }
+  | { type: 'REMOVE_CONNECTION'; fromId: string; toId: string }
+  | { type: 'REMOVE_ALL_CONNECTIONS'; nodeId: string; connections: string[] }
+  | { type: 'ADD_IMAGE'; imageId: string }
+  | { type: 'DELETE_IMAGE'; imageId: string; imageData: EditorImage }
+  | { type: 'UPDATE_IMAGE'; imageId: string; previousData: Partial<EditorImage> };
 
 export type Store = {
   // Data
@@ -25,6 +45,11 @@ export type Store = {
   images: EditorImages;
   gamePerks: GamePerksData[];
   selectedElement: SelectedElement;
+  viewportCenterRequest: ViewportCenterRequest;
+  viewport: ViewportState;
+
+  // Undo stack
+  undoStack: UndoAction[];
 
   // Node operations
   addNode: (x: number, y: number) => string;
@@ -32,6 +57,7 @@ export type Store = {
   deleteNode: (id: string) => void;
   addConnection: (fromId: string, toId: string) => void;
   removeConnection: (fromId: string, toId: string) => void;
+  removeAllConnections: (nodeId: string) => void;
 
   // Image operations
   addImage: (x: number, y: number) => string;
@@ -40,6 +66,14 @@ export type Store = {
 
   // Selection
   selectElement: (id: string | null, type: 'node' | 'image' | null) => void;
+
+  // Viewport
+  requestCenterOnElement: (id: string, type: 'node' | 'image') => void;
+  updateViewport: (viewport: ViewportState) => void;
+
+  // Undo operation
+  undo: () => void;
+  canUndo: () => boolean;
 
   // Import/Export
   importData: (data: EditorData) => void;
@@ -70,202 +104,525 @@ const createDefaultImage = (x: number, y: number): EditorImage => ({
   x,
   y,
   imageUrl: '',
+  opacity: 1,
+  rotation: 0,
 });
 
-export const useStore = create<Store>((set, get) => ({
-  // Initial state
-  nodes: {},
-  images: {},
-  gamePerks: gamePerksData as GamePerksData[],
-  selectedElement: null,
+// Helper to add action to undo stack
+const pushUndoAction = (state: Store, action: UndoAction) => {
+  const newStack = [...state.undoStack, action];
 
-  // Node operations
-  addNode: (x: number, y: number) => {
-    const id = nanoid();
-    set((state) => ({
-      nodes: {
-        ...state.nodes,
-        [id]: createDefaultNode(x, y),
-      },
-    }));
-    get().saveToLocalStorage();
-    return id;
-  },
+  // Limit stack size
+  if (newStack.length > MAX_UNDO_STACK_SIZE) {
+    newStack.shift();
+  }
 
-  updateNode: (id: string, updates: Partial<EditorNode>) => {
-    set((state) => ({
-      nodes: {
-        ...state.nodes,
-        [id]: { ...state.nodes[id], ...updates },
-      },
-    }));
-    get().saveToLocalStorage();
-  },
+  return { undoStack: newStack };
+};
 
-  deleteNode: (id: string) => {
-    set((state) => {
-      const newNodes = { ...state.nodes };
-      delete newNodes[id];
+export const useStore = create<Store>((set, get) => {
+  // Load initial data from localStorage
+  let initialNodes = {};
+  let initialImages = {};
+  let initialViewport = { x: 0, y: 0, scale: 1 };
 
-      // Remove all connections to this node
-      for (const nodeId of Object.keys(newNodes)) {
-        newNodes[nodeId] = {
-          ...newNodes[nodeId],
-          connections: newNodes[nodeId].connections.filter((connId) => connId !== id),
-        };
-      }
-
-      return {
-        nodes: newNodes,
-        selectedElement: state.selectedElement?.id === id ? null : state.selectedElement,
-      };
-    });
-    get().saveToLocalStorage();
-  },
-
-  addConnection: (fromId: string, toId: string) => {
-    set((state) => {
-      const fromNode = state.nodes[fromId];
-      const toNode = state.nodes[toId];
-
-      if (!fromNode || !toNode) return state;
-
-      // Check if connection already exists
-      if (fromNode.connections.includes(toId)) return state;
-
-      return {
-        nodes: {
-          ...state.nodes,
-          [fromId]: {
-            ...fromNode,
-            connections: [...fromNode.connections, toId],
-          },
-          [toId]: {
-            ...toNode,
-            connections: [...toNode.connections, fromId],
-          },
-        },
-      };
-    });
-    get().saveToLocalStorage();
-  },
-
-  removeConnection: (fromId: string, toId: string) => {
-    set((state) => {
-      const fromNode = state.nodes[fromId];
-      const toNode = state.nodes[toId];
-
-      if (!fromNode || !toNode) return state;
-
-      return {
-        nodes: {
-          ...state.nodes,
-          [fromId]: {
-            ...fromNode,
-            connections: fromNode.connections.filter((id) => id !== toId),
-          },
-          [toId]: {
-            ...toNode,
-            connections: toNode.connections.filter((id) => id !== fromId),
-          },
-        },
-      };
-    });
-    get().saveToLocalStorage();
-  },
-
-  // Image operations
-  addImage: (x: number, y: number) => {
-    const id = nanoid();
-    set((state) => ({
-      images: {
-        ...state.images,
-        [id]: createDefaultImage(x, y),
-      },
-    }));
-    get().saveToLocalStorage();
-    return id;
-  },
-
-  updateImage: (id: string, updates: Partial<EditorImage>) => {
-    set((state) => ({
-      images: {
-        ...state.images,
-        [id]: { ...state.images[id], ...updates },
-      },
-    }));
-    get().saveToLocalStorage();
-  },
-
-  deleteImage: (id: string) => {
-    set((state) => {
-      const newImages = { ...state.images };
-      delete newImages[id];
-
-      return {
-        images: newImages,
-        selectedElement: state.selectedElement?.id === id ? null : state.selectedElement,
-      };
-    });
-    get().saveToLocalStorage();
-  },
-
-  // Selection
-  selectElement: (id: string | null, type: 'node' | 'image' | null) => {
-    set({
-      selectedElement: id && type ? { id, type } : null,
-    });
-  },
-
-  // Import/Export
-  importData: (data: EditorData) => {
-    set({
-      nodes: data.nodes,
-      images: data.images,
-      selectedElement: null,
-    });
-    get().saveToLocalStorage();
-  },
-
-  exportData: () => {
-    const state = get();
-    return {
-      nodes: state.nodes,
-      images: state.images,
-    };
-  },
-
-  clearAll: () => {
-    set({
-      nodes: {},
-      images: {},
-      selectedElement: null,
-    });
-    localStorage.removeItem(STORAGE_KEY);
-  },
-
-  // Persistence
-  saveToLocalStorage: () => {
-    const state = get();
-    const data: EditorData = {
-      nodes: state.nodes,
-      images: state.images,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  },
-
-  loadFromLocalStorage: () => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const data: EditorData = JSON.parse(stored);
-        set({
-          nodes: data.nodes || {},
-          images: data.images || {},
-        });
-      }
-    } catch (error) {
-      console.error('Failed to load from localStorage:', error);
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const data: EditorData = JSON.parse(stored);
+      initialNodes = data.nodes || {};
+      initialImages = data.images || {};
+      initialViewport = data.viewport || { x: 0, y: 0, scale: 1 };
     }
-  },
-}));
+  } catch (error) {
+    console.error('Failed to load from localStorage:', error);
+  }
+
+  return {
+    // Initial state
+    nodes: initialNodes,
+    images: initialImages,
+    gamePerks: gamePerksData as GamePerksData[],
+    selectedElement: null,
+    viewportCenterRequest: null,
+    viewport: initialViewport,
+    undoStack: [],
+
+    // Node operations
+    addNode: (x: number, y: number) => {
+      const id = nanoid();
+      set((state) => ({
+        ...pushUndoAction(state, { type: 'ADD_NODE', nodeId: id }),
+        nodes: {
+          ...state.nodes,
+          [id]: createDefaultNode(x, y),
+        },
+      }));
+      get().saveToLocalStorage();
+      return id;
+    },
+
+    updateNode: (id: string, updates: Partial<EditorNode>) => {
+      set((state) => {
+        const currentNode = state.nodes[id];
+        if (!currentNode) return state;
+
+        // Save only the fields that are being updated
+        const previousData: Partial<EditorNode> = {};
+        for (const key of Object.keys(updates) as Array<keyof EditorNode>) {
+          previousData[key] = currentNode[key] as any;
+        }
+
+        return {
+          ...pushUndoAction(state, { type: 'UPDATE_NODE', nodeId: id, previousData }),
+          nodes: {
+            ...state.nodes,
+            [id]: { ...currentNode, ...updates },
+          },
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    deleteNode: (id: string) => {
+      set((state) => {
+        const nodeToDelete = state.nodes[id];
+        if (!nodeToDelete) return state;
+
+        const newNodes = { ...state.nodes };
+        delete newNodes[id];
+
+        // Remove all connections to this node
+        for (const nodeId of Object.keys(newNodes)) {
+          newNodes[nodeId] = {
+            ...newNodes[nodeId],
+            connections: newNodes[nodeId].connections.filter((connId) => connId !== id),
+          };
+        }
+
+        return {
+          ...pushUndoAction(state, { type: 'DELETE_NODE', nodeId: id, nodeData: nodeToDelete }),
+          nodes: newNodes,
+          selectedElement: state.selectedElement?.id === id ? null : state.selectedElement,
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    addConnection: (fromId: string, toId: string) => {
+      set((state) => {
+        const fromNode = state.nodes[fromId];
+        const toNode = state.nodes[toId];
+
+        if (!fromNode || !toNode) return state;
+
+        // Check if connection already exists
+        if (fromNode.connections.includes(toId)) return state;
+
+        return {
+          ...pushUndoAction(state, { type: 'ADD_CONNECTION', fromId, toId }),
+          nodes: {
+            ...state.nodes,
+            [fromId]: {
+              ...fromNode,
+              connections: [...fromNode.connections, toId],
+            },
+            [toId]: {
+              ...toNode,
+              connections: [...toNode.connections, fromId],
+            },
+          },
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    removeConnection: (fromId: string, toId: string) => {
+      set((state) => {
+        const fromNode = state.nodes[fromId];
+        const toNode = state.nodes[toId];
+
+        if (!fromNode || !toNode) return state;
+
+        return {
+          ...pushUndoAction(state, { type: 'REMOVE_CONNECTION', fromId, toId }),
+          nodes: {
+            ...state.nodes,
+            [fromId]: {
+              ...fromNode,
+              connections: fromNode.connections.filter((id) => id !== toId),
+            },
+            [toId]: {
+              ...toNode,
+              connections: toNode.connections.filter((id) => id !== fromId),
+            },
+          },
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    removeAllConnections: (nodeId: string) => {
+      set((state) => {
+        const node = state.nodes[nodeId];
+        if (!node) return state;
+
+        const newNodes = { ...state.nodes };
+
+        // Save connections for undo
+        const connections = [...node.connections];
+
+        // Remove connections from all connected nodes
+        for (const connectedId of connections) {
+          if (newNodes[connectedId]) {
+            newNodes[connectedId] = {
+              ...newNodes[connectedId],
+              connections: newNodes[connectedId].connections.filter((id) => id !== nodeId),
+            };
+          }
+        }
+
+        // Clear connections from the target node
+        newNodes[nodeId] = {
+          ...node,
+          connections: [],
+        };
+
+        return {
+          ...pushUndoAction(state, { type: 'REMOVE_ALL_CONNECTIONS', nodeId, connections }),
+          nodes: newNodes,
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    // Image operations
+    addImage: (x: number, y: number) => {
+      const id = nanoid();
+      set((state) => ({
+        ...pushUndoAction(state, { type: 'ADD_IMAGE', imageId: id }),
+        images: {
+          ...state.images,
+          [id]: createDefaultImage(x, y),
+        },
+      }));
+      get().saveToLocalStorage();
+      return id;
+    },
+
+    updateImage: (id: string, updates: Partial<EditorImage>) => {
+      set((state) => {
+        const currentImage = state.images[id];
+        if (!currentImage) return state;
+
+        // Save only the fields that are being updated
+        const previousData: Partial<EditorImage> = {};
+        for (const key of Object.keys(updates) as Array<keyof EditorImage>) {
+          previousData[key] = currentImage[key] as any;
+        }
+
+        return {
+          ...pushUndoAction(state, { type: 'UPDATE_IMAGE', imageId: id, previousData }),
+          images: {
+            ...state.images,
+            [id]: { ...currentImage, ...updates },
+          },
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    deleteImage: (id: string) => {
+      set((state) => {
+        const imageToDelete = state.images[id];
+        if (!imageToDelete) return state;
+
+        const newImages = { ...state.images };
+        delete newImages[id];
+
+        return {
+          ...pushUndoAction(state, { type: 'DELETE_IMAGE', imageId: id, imageData: imageToDelete }),
+          images: newImages,
+          selectedElement: state.selectedElement?.id === id ? null : state.selectedElement,
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    // Selection
+    selectElement: (id: string | null, type: 'node' | 'image' | null) => {
+      set({
+        selectedElement: id && type ? { id, type } : null,
+      });
+    },
+
+    // Viewport
+    requestCenterOnElement: (id: string, type: 'node' | 'image') => {
+      set({
+        viewportCenterRequest: { id, type, timestamp: Date.now() },
+      });
+    },
+
+    updateViewport: (viewport: ViewportState) => {
+      set({ viewport });
+      get().saveToLocalStorage();
+    },
+
+    // Undo operation
+    undo: () => {
+      const state = get();
+      if (state.undoStack.length === 0) return;
+
+      const action = state.undoStack.at(-1);
+      if (!action) return;
+
+      const newStack = state.undoStack.slice(0, -1);
+
+      set({ undoStack: newStack });
+
+      // Execute reverse operation based on action type
+      switch (action.type) {
+        case 'ADD_NODE': {
+          // Reverse: delete the node
+          const newNodes = { ...state.nodes };
+          delete newNodes[action.nodeId];
+
+          // Remove connections to this node
+          for (const nodeId of Object.keys(newNodes)) {
+            newNodes[nodeId] = {
+              ...newNodes[nodeId],
+              connections: newNodes[nodeId].connections.filter((id) => id !== action.nodeId),
+            };
+          }
+
+          set({
+            nodes: newNodes,
+            selectedElement:
+              state.selectedElement?.id === action.nodeId ? null : state.selectedElement,
+          });
+          break;
+        }
+
+        case 'DELETE_NODE': {
+          // Reverse: restore the node
+          set({
+            nodes: {
+              ...state.nodes,
+              [action.nodeId]: action.nodeData,
+            },
+          });
+
+          // Restore connections
+          const nodesToUpdate = { ...state.nodes, [action.nodeId]: action.nodeData };
+          for (const connectedId of action.nodeData.connections) {
+            if (
+              nodesToUpdate[connectedId] &&
+              !nodesToUpdate[connectedId].connections.includes(action.nodeId)
+            ) {
+              nodesToUpdate[connectedId] = {
+                ...nodesToUpdate[connectedId],
+                connections: [...nodesToUpdate[connectedId].connections, action.nodeId],
+              };
+            }
+          }
+          set({ nodes: nodesToUpdate });
+          break;
+        }
+
+        case 'UPDATE_NODE': {
+          // Reverse: restore previous values
+          const currentNode = state.nodes[action.nodeId];
+          if (currentNode) {
+            set({
+              nodes: {
+                ...state.nodes,
+                [action.nodeId]: { ...currentNode, ...action.previousData },
+              },
+            });
+          }
+          break;
+        }
+
+        case 'ADD_CONNECTION': {
+          // Reverse: remove the connection
+          const fromNode = state.nodes[action.fromId];
+          const toNode = state.nodes[action.toId];
+
+          if (fromNode && toNode) {
+            set({
+              nodes: {
+                ...state.nodes,
+                [action.fromId]: {
+                  ...fromNode,
+                  connections: fromNode.connections.filter((id) => id !== action.toId),
+                },
+                [action.toId]: {
+                  ...toNode,
+                  connections: toNode.connections.filter((id) => id !== action.fromId),
+                },
+              },
+            });
+          }
+          break;
+        }
+
+        case 'REMOVE_CONNECTION': {
+          // Reverse: restore the connection
+          const fromNode = state.nodes[action.fromId];
+          const toNode = state.nodes[action.toId];
+
+          if (fromNode && toNode) {
+            set({
+              nodes: {
+                ...state.nodes,
+                [action.fromId]: {
+                  ...fromNode,
+                  connections: [...fromNode.connections, action.toId],
+                },
+                [action.toId]: {
+                  ...toNode,
+                  connections: [...toNode.connections, action.fromId],
+                },
+              },
+            });
+          }
+          break;
+        }
+
+        case 'REMOVE_ALL_CONNECTIONS': {
+          // Reverse: restore all connections
+          const node = state.nodes[action.nodeId];
+          if (node) {
+            const newNodes = { ...state.nodes };
+
+            // Restore connections to the node
+            newNodes[action.nodeId] = {
+              ...node,
+              connections: [...action.connections],
+            };
+
+            // Restore connections from connected nodes
+            for (const connectedId of action.connections) {
+              if (
+                newNodes[connectedId] &&
+                !newNodes[connectedId].connections.includes(action.nodeId)
+              ) {
+                newNodes[connectedId] = {
+                  ...newNodes[connectedId],
+                  connections: [...newNodes[connectedId].connections, action.nodeId],
+                };
+              }
+            }
+
+            set({ nodes: newNodes });
+          }
+          break;
+        }
+
+        case 'ADD_IMAGE': {
+          // Reverse: delete the image
+          const newImages = { ...state.images };
+          delete newImages[action.imageId];
+          set({
+            images: newImages,
+            selectedElement:
+              state.selectedElement?.id === action.imageId ? null : state.selectedElement,
+          });
+          break;
+        }
+
+        case 'DELETE_IMAGE': {
+          // Reverse: restore the image
+          set({
+            images: {
+              ...state.images,
+              [action.imageId]: action.imageData,
+            },
+          });
+          break;
+        }
+
+        case 'UPDATE_IMAGE': {
+          // Reverse: restore previous values
+          const currentImage = state.images[action.imageId];
+          if (currentImage) {
+            set({
+              images: {
+                ...state.images,
+                [action.imageId]: { ...currentImage, ...action.previousData },
+              },
+            });
+          }
+          break;
+        }
+      }
+
+      get().saveToLocalStorage();
+    },
+
+    canUndo: () => {
+      const state = get();
+      return state.undoStack.length > 0;
+    },
+
+    // Import/Export
+    importData: (data: EditorData) => {
+      set({
+        nodes: data.nodes,
+        images: data.images,
+        viewport: data.viewport || { x: 0, y: 0, scale: 1 },
+        selectedElement: null,
+        undoStack: [], // Clear undo stack on import
+      });
+      get().saveToLocalStorage();
+    },
+
+    exportData: () => {
+      const state = get();
+      return {
+        nodes: state.nodes,
+        images: state.images,
+        viewport: state.viewport,
+      };
+    },
+
+    clearAll: () => {
+      set({
+        nodes: {},
+        images: {},
+        viewport: { x: 0, y: 0, scale: 1 },
+        selectedElement: null,
+        undoStack: [], // Clear undo stack
+      });
+      localStorage.removeItem(STORAGE_KEY);
+    },
+
+    // Persistence
+    saveToLocalStorage: () => {
+      const state = get();
+      const data: EditorData = {
+        nodes: state.nodes,
+        images: state.images,
+        viewport: state.viewport,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    },
+
+    loadFromLocalStorage: () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const data: EditorData = JSON.parse(stored);
+          set({
+            nodes: data.nodes || {},
+            images: data.images || {},
+            viewport: data.viewport || { x: 0, y: 0, scale: 1 },
+            undoStack: [], // Start with empty undo stack
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load from localStorage:', error);
+      }
+    },
+  };
+});

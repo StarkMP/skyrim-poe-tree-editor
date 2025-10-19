@@ -335,36 +335,42 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
           ) : null}
 
           {exportResult ? (
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium mb-2">Файлы готовы к скачиванию:</p>
-              <a
-                href={exportResult.editorDataUrl}
-                download="editor-data.json"
-                className="text-sm text-primary hover:underline"
-              >
-                📄 editor-data.json
-              </a>
-              <a
-                href={exportResult.gameDataUrl}
-                download="game-data.json"
-                className="text-sm text-primary hover:underline"
-              >
-                📄 game-data.json
-              </a>
-              <a
-                href={exportResult.nodeIconsUrl}
-                download="node-icons.png"
-                className="text-sm text-primary hover:underline"
-              >
-                🖼️ node-icons.png
-              </a>
-              <a
-                href={exportResult.backgroundUrl}
-                download="background.png"
-                className="text-sm text-primary hover:underline"
-              >
-                🖼️ background.png
-              </a>
+            <div className="flex flex-col gap-4">
+              <p className="text-lg font-medium">Файлы готовы к скачиванию</p>
+              <div className="flex flex-col gap-2">
+                <span className="text-md font-medium">Для редактора:</span>
+                <a
+                  href={exportResult.editorDataUrl}
+                  download="editor-data.json"
+                  className="text-sm text-primary hover:underline"
+                >
+                  📄 editor-data.json
+                </a>
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-md font-medium">Для игры:</span>
+                <a
+                  href={exportResult.gameDataUrl}
+                  download="game-data.json"
+                  className="text-sm text-primary hover:underline"
+                >
+                  📄 game-data.json
+                </a>
+                <a
+                  href={exportResult.nodeIconsUrl}
+                  download="node-icons.png"
+                  className="text-sm text-primary hover:underline"
+                >
+                  🖼️ node-icons.png
+                </a>
+                <a
+                  href={exportResult.backgroundUrl}
+                  download="background.png"
+                  className="text-sm text-primary hover:underline"
+                >
+                  🖼️ background.png
+                </a>
+              </div>
             </div>
           ) : null}
         </div>

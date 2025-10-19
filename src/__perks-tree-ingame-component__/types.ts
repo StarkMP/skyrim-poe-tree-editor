@@ -2,8 +2,6 @@ export const enum PerksTreeNodeType {
   SmallNode = 0,
   LargeNode = 1,
   MasterNode = 2,
-  Jewel = 3,
-  ClusterJewel = 4,
 }
 
 export type PerksTreeNode = {

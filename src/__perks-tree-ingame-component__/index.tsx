@@ -119,6 +119,14 @@ export const PerksTree = () => {
             onMouseLeave={handleSvgMouseLeave}
             onClick={handleSvgClick}
           >
+            {/* Monolith Image of all Background Images (be ready later) */}
+            {/* <image
+              href={...}
+              width={data.width}
+              height={data.height}
+              style={{ pointerEvents: 'none' }}
+            /> */}
+
             {/* Node Inactive Lines */}
             <path d={precomputed.linesPath} stroke="#404040" strokeWidth="6" fill="none" />
 

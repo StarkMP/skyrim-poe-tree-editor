@@ -3,7 +3,7 @@ import { ClassNameValue } from 'tailwind-merge';
 
 import { cn } from '@/lib/utils';
 
-export const Section = ({
+export const PanelSection = ({
   className,
   title,
   children,

@@ -124,7 +124,7 @@ export const ImportDialog = ({ open, onOpenChange }: ImportDialogProps) => {
         <DialogHeader>
           <DialogTitle>Импорт ветки умений</DialogTitle>
           <DialogDescription>
-            Загрузите файл editor-data.json для импорта ранее экспортированной ветки.
+            Загрузите JSON-файл для импорта ранее экспортированной ветки.
           </DialogDescription>
         </DialogHeader>
 

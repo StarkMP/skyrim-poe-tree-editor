@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,12 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
 
   const [imageUrlInput, setImageUrlInput] = useState(image.imageUrl);
   const [imageUrlError, setImageUrlError] = useState('');
+
+  // Update input when image changes
+  useEffect(() => {
+    setImageUrlInput(image.imageUrl);
+    setImageUrlError('');
+  }, [imageId, image.imageUrl]);
 
   const handleWidthChange = (value: string) => {
     const width = Number.parseInt(value);

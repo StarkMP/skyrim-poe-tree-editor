@@ -58,7 +58,9 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       }
 
       if (nodeErrors.length > 0) {
-        validationErrors.push(`Нода ${nodeId.slice(0, 8)}: ${nodeErrors.join(', ')}`);
+        validationErrors.push(
+          `Нода [${node.title || 'Нет имени'}] (${nodeId.slice(0, 8)}): ${nodeErrors.join(', ')}`
+        );
       }
     }
 
@@ -183,7 +185,22 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
 
         // Apply opacity (default 1)
         ctx.globalAlpha = image.opacity ?? 1;
-        ctx.drawImage(img, x, y, image.width, image.height);
+
+        // Apply rotation (default 0)
+        const rotation = image.rotation ?? 0;
+        if (rotation === 0) {
+          ctx.drawImage(img, x, y, image.width, image.height);
+        } else {
+          ctx.save();
+          // Move to center of image
+          ctx.translate(x + image.width / 2, y + image.height / 2);
+          // Rotate (convert degrees to radians)
+          ctx.rotate((rotation * Math.PI) / 180);
+          // Draw image centered at origin
+          ctx.drawImage(img, -image.width / 2, -image.height / 2, image.width, image.height);
+          ctx.restore();
+        }
+
         // Reset globalAlpha
         ctx.globalAlpha = 1;
       } catch (error) {

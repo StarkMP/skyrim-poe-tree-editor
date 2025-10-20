@@ -86,7 +86,7 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
           {/* Image URL */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="image-url" className="text-xs">
-              Изображение
+              Ссылка на изображение
             </Label>
             <div className="flex gap-2">
               <Input

@@ -211,7 +211,7 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
           {/* Icon URL */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="node-icon" className="text-xs">
-              Иконка
+              Ссылка на иконку
             </Label>
             <div className="flex gap-2">
               <Input

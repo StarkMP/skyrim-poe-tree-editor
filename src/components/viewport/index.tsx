@@ -313,98 +313,100 @@ export const Viewport = () => {
 
   return (
     <div ref={containerRef} className="size-full bg-[#080B10]">
-      <Stage
-        ref={stageRef}
-        width={stageSize.width}
-        height={stageSize.height}
-        draggable={!isDraggingElement}
-        onWheel={handleWheel}
-        onDragEnd={handleDragEnd}
-        onContextMenu={handleContextMenu}
-        onMouseMove={handleMouseMove}
-        onClick={handleStageClick}
-      >
-        <Layer>
-          {/* Background Images - lowest z-index */}
-          {Object.entries(images).map(([id, image]) => (
-            <BackgroundImage
-              key={id}
-              id={id}
-              image={image}
-              isSelected={selectedElement?.id === id ? selectedElement?.type === 'image' : null}
-              onSelect={() => handleImageClick(id)}
-              onContextMenu={handleImageContextMenu}
-              onDragStart={() => setIsDraggingElement(true)}
-              onDragEnd={() => setIsDraggingElement(false)}
-            />
-          ))}
-
-          {/* Connections - middle z-index (hide if node is being dragged) */}
-          {connections.map((conn) => {
-            const fromNode = nodes[conn.fromId];
-            const toNode = nodes[conn.toId];
-            if (!fromNode || !toNode) return null;
-
-            // Hide connection if one of its nodes is being dragged
-            const isHidden =
-              draggingNodeId && (conn.fromId === draggingNodeId || conn.toId === draggingNodeId);
-
-            return (
-              <ConnectionLine
-                key={conn.id}
-                from={fromNode}
-                to={toNode}
-                onDelete={() => removeConnection(conn.fromId, conn.toId)}
-                opacity={isHidden ? 0 : 1}
+      {stageSize.width > 0 && stageSize.height > 0 ? (
+        <Stage
+          ref={stageRef}
+          width={stageSize.width}
+          height={stageSize.height}
+          draggable={!isDraggingElement}
+          onWheel={handleWheel}
+          onDragEnd={handleDragEnd}
+          onContextMenu={handleContextMenu}
+          onMouseMove={handleMouseMove}
+          onClick={handleStageClick}
+        >
+          <Layer>
+            {/* Background Images - lowest z-index */}
+            {Object.entries(images).map(([id, image]) => (
+              <BackgroundImage
+                key={id}
+                id={id}
+                image={image}
+                isSelected={selectedElement?.id === id ? selectedElement?.type === 'image' : null}
+                onSelect={() => handleImageClick(id)}
+                onContextMenu={handleImageContextMenu}
+                onDragStart={() => setIsDraggingElement(true)}
+                onDragEnd={() => setIsDraggingElement(false)}
               />
-            );
-          })}
+            ))}
 
-          {/* Temporary lines while dragging node */}
-          {draggingNodeId && draggingNodePos && nodes[draggingNodeId]
-            ? nodes[draggingNodeId].connections.map((connectedId) => {
-                const connectedNode = nodes[connectedId];
-                if (!connectedNode) return null;
+            {/* Connections - middle z-index (hide if node is being dragged) */}
+            {connections.map((conn) => {
+              const fromNode = nodes[conn.fromId];
+              const toNode = nodes[conn.toId];
+              if (!fromNode || !toNode) return null;
 
-                return (
-                  <TempConnectionLine
-                    key={`temp-${draggingNodeId}-${connectedId}`}
-                    from={draggingNodePos}
-                    to={{ x: connectedNode.x, y: connectedNode.y }}
-                  />
-                );
-              })
-            : null}
+              // Hide connection if one of its nodes is being dragged
+              const isHidden =
+                draggingNodeId && (conn.fromId === draggingNodeId || conn.toId === draggingNodeId);
 
-          {/* Nodes - highest z-index */}
-          {Object.entries(nodes).map(([id, node]) => (
-            <NodeElement
-              key={id}
-              id={id}
-              node={node}
-              isSelected={selectedElement?.id === id ? selectedElement?.type === 'node' : null}
-              onSelect={() => handleNodeClick(id)}
-              onContextMenu={handleNodeContextMenu}
-              onDragStart={() => {
-                setIsDraggingElement(true);
-                setDraggingNodeId(id);
-                setDraggingNodePos({ x: node.x, y: node.y });
-              }}
-              onDragMove={(pos) => setDraggingNodePos(pos)}
-              onDragEnd={() => {
-                setIsDraggingElement(false);
-                setDraggingNodeId(null);
-                setDraggingNodePos(null);
-              }}
-            />
-          ))}
+              return (
+                <ConnectionLine
+                  key={conn.id}
+                  from={fromNode}
+                  to={toNode}
+                  onDelete={() => removeConnection(conn.fromId, conn.toId)}
+                  opacity={isHidden ? 0 : 1}
+                />
+              );
+            })}
 
-          {/* Temporary connection line */}
-          {isCreatingConnection && connectionStart ? (
-            <TempConnectionLine from={connectionStart} to={mousePos} />
-          ) : null}
-        </Layer>
-      </Stage>
+            {/* Temporary lines while dragging node */}
+            {draggingNodeId && draggingNodePos && nodes[draggingNodeId]
+              ? nodes[draggingNodeId].connections.map((connectedId) => {
+                  const connectedNode = nodes[connectedId];
+                  if (!connectedNode) return null;
+
+                  return (
+                    <TempConnectionLine
+                      key={`temp-${draggingNodeId}-${connectedId}`}
+                      from={draggingNodePos}
+                      to={{ x: connectedNode.x, y: connectedNode.y }}
+                    />
+                  );
+                })
+              : null}
+
+            {/* Nodes - highest z-index */}
+            {Object.entries(nodes).map(([id, node]) => (
+              <NodeElement
+                key={id}
+                id={id}
+                node={node}
+                isSelected={selectedElement?.id === id ? selectedElement?.type === 'node' : null}
+                onSelect={() => handleNodeClick(id)}
+                onContextMenu={handleNodeContextMenu}
+                onDragStart={() => {
+                  setIsDraggingElement(true);
+                  setDraggingNodeId(id);
+                  setDraggingNodePos({ x: node.x, y: node.y });
+                }}
+                onDragMove={(pos) => setDraggingNodePos(pos)}
+                onDragEnd={() => {
+                  setIsDraggingElement(false);
+                  setDraggingNodeId(null);
+                  setDraggingNodePos(null);
+                }}
+              />
+            ))}
+
+            {/* Temporary connection line */}
+            {isCreatingConnection && connectionStart ? (
+              <TempConnectionLine from={connectionStart} to={mousePos} />
+            ) : null}
+          </Layer>
+        </Stage>
+      ) : null}
 
       {/* Context Menu */}
       {contextMenu ? (

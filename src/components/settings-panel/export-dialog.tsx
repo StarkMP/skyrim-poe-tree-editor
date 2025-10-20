@@ -29,6 +29,7 @@ type ExportResult = {
 export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
   const nodes = useStore((state) => state.nodes);
   const images = useStore((state) => state.images);
+  const viewport = useStore((state) => state.viewport);
   const gamePerks = useStore((state) => state.gamePerks);
 
   const [errors, setErrors] = useState<string[]>([]);
@@ -232,7 +233,9 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       const editorData = {
         nodes,
         images,
+        viewport,
       };
+
       const editorDataBlob = new Blob([JSON.stringify(editorData, null, 2)], {
         type: 'application/json',
       });

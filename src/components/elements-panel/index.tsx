@@ -68,7 +68,7 @@ export const ElementsPanel = () => {
       </div>
 
       <div className="size-full relative overflow-y-auto">
-        <div className="size-full absolute left-0 top-0 flex flex-col gap-1 p-2">
+        <div className="size-full absolute left-0 top-0 flex flex-col gap-1 p-2 pt-0">
           {filteredElements.length === 0 ? (
             <div className="text-xs text-muted-foreground text-center py-4">
               {elements.length === 0 ? 'Нет элементов' : 'Ничего не найдено'}

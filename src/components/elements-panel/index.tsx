@@ -77,9 +77,9 @@ export const ElementsPanel = () => {
             filteredElements.map((element) => (
               <div
                 key={element.id}
-                className={`flex w-full items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                className={`flex w-full items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
                   selectedElement?.id === element.id && selectedElement?.type === element.type
-                    ? 'bg-accent border-primary'
+                    ? 'bg-accent'
                     : 'hover:bg-accent/50'
                 }`}
                 onClick={() => selectElement(element.id, element.type)}

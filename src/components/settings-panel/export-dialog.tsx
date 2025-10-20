@@ -128,7 +128,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     y: number;
     width: number;
     height: number;
-  }): Promise<string> => {
+  }): Promise<Blob> => {
     const canvas = document.createElement('canvas');
     canvas.width = bounds.width;
     canvas.height = bounds.height;
@@ -159,7 +159,15 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       }
     }
 
-    return canvas.toDataURL('image/png');
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Failed to generate blob from canvas'));
+        }
+      }, 'image/png');
+    });
   };
 
   const generateBackgroundImage = async (bounds: {
@@ -167,7 +175,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     y: number;
     width: number;
     height: number;
-  }): Promise<string> => {
+  }): Promise<Blob> => {
     const canvas = document.createElement('canvas');
     canvas.width = bounds.width;
     canvas.height = bounds.height;
@@ -209,7 +217,15 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       }
     }
 
-    return canvas.toDataURL('image/png');
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Failed to generate blob from canvas'));
+        }
+      }, 'image/png');
+    });
   };
 
   const handleExport = async () => {
@@ -268,13 +284,11 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       const gameDataUrl = URL.createObjectURL(gameDataBlob);
 
       // Generate node-icons.png
-      const nodeIconsDataUrl = await generateNodeIconsImage(bounds);
-      const nodeIconsBlob = await (await fetch(nodeIconsDataUrl)).blob();
+      const nodeIconsBlob = await generateNodeIconsImage(bounds);
       const nodeIconsUrl = URL.createObjectURL(nodeIconsBlob);
 
       // Generate background.png
-      const backgroundDataUrl = await generateBackgroundImage(bounds);
-      const backgroundBlob = await (await fetch(backgroundDataUrl)).blob();
+      const backgroundBlob = await generateBackgroundImage(bounds);
       const backgroundUrl = URL.createObjectURL(backgroundBlob);
 
       setExportResult({

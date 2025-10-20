@@ -57,7 +57,7 @@ export const ElementsPanel = () => {
     <div className="size-full bg-background border-r flex flex-col">
       <div className="text-xs text-center border-b py-2">Список элементов</div>
 
-      <div className="px-2 py-2 border-b">
+      <div className="p-2">
         <Input
           type="text"
           placeholder="Поиск по элементам..."

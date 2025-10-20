@@ -15,6 +15,10 @@ import { PanelSection } from '@/components/ui/panel-section';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useStore } from '@/store';
 
+import { Badge } from '../ui/badge';
+import { Label } from '../ui/label';
+import { Slider } from '../ui/slider';
+import { Switch } from '../ui/switch';
 import { ExportDialog } from './export-dialog';
 import { ImageSettings } from './image-settings';
 import { ImportDialog } from './import-dialog';
@@ -64,6 +68,22 @@ export const SettingsPanel = () => {
             >
               <Trash2 />
             </Button>
+          </div>
+        </PanelSection>
+
+        <PanelSection title="Глобальные настройки">
+          <div className="flex flex-col gap-4 w-full">
+            <div className="flex w-full items-center justify-between">
+              <Label htmlFor="positioning-grid" className="text-xs">
+                Сетка позиционирования
+              </Label>
+              <Switch id="positioning-grid" />
+            </div>
+            {/* если сетка позиционирование === false, то ниже блок дизейблим (pointer-events: none и opacity на opacity-50) */}
+            <div className="flex items-center gap-4 justify-between">
+              <Slider className="my-2" defaultValue={[20]} max={100} step={5} />
+              <Badge variant="secondary">20px</Badge>
+            </div>
           </div>
         </PanelSection>
 

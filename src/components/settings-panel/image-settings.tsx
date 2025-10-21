@@ -52,6 +52,20 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
     }
   };
 
+  const handleXChange = (value: string) => {
+    const x = Number.parseFloat(value);
+    if (!Number.isNaN(x)) {
+      updateImage(imageId, { x });
+    }
+  };
+
+  const handleYChange = (value: string) => {
+    const y = Number.parseFloat(value);
+    if (!Number.isNaN(y)) {
+      updateImage(imageId, { y });
+    }
+  };
+
   const validateAndApplyImageUrl = () => {
     const url = imageUrlInput.trim();
 
@@ -123,7 +137,7 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
                 id="image-x"
                 type="number"
                 value={Math.round(image.x)}
-                disabled
+                onChange={(e) => handleXChange(e.target.value)}
                 className="h-8 text-xs"
               />
             </div>
@@ -137,7 +151,7 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
                 id="image-y"
                 type="number"
                 value={Math.round(image.y)}
-                disabled
+                onChange={(e) => handleYChange(e.target.value)}
                 className="h-8 text-xs"
               />
             </div>

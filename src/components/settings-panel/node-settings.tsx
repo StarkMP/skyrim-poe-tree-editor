@@ -67,6 +67,20 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
     updateNode(nodeId, { keywords });
   };
 
+  const handleXChange = (value: string) => {
+    const x = Number.parseFloat(value);
+    if (!Number.isNaN(x)) {
+      updateNode(nodeId, { x });
+    }
+  };
+
+  const handleYChange = (value: string) => {
+    const y = Number.parseFloat(value);
+    if (!Number.isNaN(y)) {
+      updateNode(nodeId, { y });
+    }
+  };
+
   const validateAndApplyIconUrl = () => {
     const url = iconUrlInput.trim();
 
@@ -125,7 +139,7 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
                 id="node-x"
                 type="number"
                 value={Math.round(node.x)}
-                disabled
+                onChange={(e) => handleXChange(e.target.value)}
                 className="h-8 text-xs"
               />
             </div>
@@ -139,7 +153,7 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
                 id="node-y"
                 type="number"
                 value={Math.round(node.y)}
-                disabled
+                onChange={(e) => handleYChange(e.target.value)}
                 className="h-8 text-xs"
               />
             </div>

@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+import largeNodeBorder from '@/assets/large-node-border.png';
+import masterNodeBorder from '@/assets/master-node-border.png';
+import smallNodeBorder from '@/assets/small-node-border.png';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,8 +14,15 @@ import {
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { useStore } from '@/store';
-import { ExportData, ExportNode } from '@/types';
+import { ExportData, ExportNode, NodeType } from '@/types';
 import { getNodeRadius } from '@/utils/node-helpers';
+
+// Border images for each node type
+const nodeBorderImages: Record<NodeType, string> = {
+  [NodeType.SmallNode]: smallNodeBorder,
+  [NodeType.LargeNode]: largeNodeBorder,
+  [NodeType.MasterNode]: masterNodeBorder,
+};
 
 type ExportDialogProps = {
   open: boolean;
@@ -136,17 +146,21 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Failed to get canvas context');
 
-    // Load all node icons
+    // Load all node icons and borders
     for (const node of Object.values(nodes)) {
       if (!node.iconUrl) continue;
 
       try {
-        const img = await loadImage(node.iconUrl);
         const radius = getNodeRadius(node.type);
         const x = node.x - bounds.x;
         const y = node.y - bounds.y;
 
-        // Draw circular clipped icon
+        // Border size slightly larger than node
+        const borderScale = 1.15;
+        const borderSize = radius * 2 * borderScale;
+
+        // Load and draw circular clipped icon first
+        const img = await loadImage(node.iconUrl);
         ctx.save();
         ctx.beginPath();
         ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -154,6 +168,10 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         ctx.clip();
         ctx.drawImage(img, x - radius, y - radius, radius * 2, radius * 2);
         ctx.restore();
+
+        // Load and draw border on top of the icon
+        const borderImg = await loadImage(nodeBorderImages[node.type]);
+        ctx.drawImage(borderImg, x - borderSize / 2, y - borderSize / 2, borderSize, borderSize);
       } catch (error) {
         console.error(`Failed to load icon for node: ${node.iconUrl}`, error);
       }

@@ -3,9 +3,19 @@ import { useEffect, useState } from 'react';
 import { Circle, Group, Image } from 'react-konva';
 import useImage from 'use-image';
 
+import largeNodeBorder from '@/assets/large-node-border.png';
+import masterNodeBorder from '@/assets/master-node-border.png';
+import smallNodeBorder from '@/assets/small-node-border.png';
 import { useStore } from '@/store';
-import { EditorNode } from '@/types';
-import { getNodeRadius, STROKE_WIDTH } from '@/utils/node-helpers';
+import { EditorNode, NodeType } from '@/types';
+import { getNodeRadius } from '@/utils/node-helpers';
+
+// Border images for each node type
+const nodeBorderImages: Record<NodeType, string> = {
+  [NodeType.SmallNode]: smallNodeBorder,
+  [NodeType.LargeNode]: largeNodeBorder,
+  [NodeType.MasterNode]: masterNodeBorder,
+};
 
 type NodeElementProps = {
   id: string;
@@ -31,7 +41,12 @@ export const NodeElement = ({
   const updateNode = useStore((state) => state.updateNode);
   const radius = getNodeRadius(node.type);
   const [image] = useImage(node.iconUrl || '', 'anonymous');
+  const [borderImage] = useImage(nodeBorderImages[node.type], 'anonymous');
   const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
+
+  // Border size slightly larger than node
+  const borderScale = 1.15;
+  const borderSize = radius * 2 * borderScale;
 
   // Create circular clipped image
   useEffect(() => {
@@ -97,9 +112,6 @@ export const NodeElement = ({
       onContextMenu={handleContextMenu}
       onClick={handleClick}
     >
-      {/* Outer circle border */}
-      <Circle radius={radius} stroke="#404040" strokeWidth={STROKE_WIDTH} fill="none" />
-
       {/* Icon image */}
       {imageElement ? (
         <Image
@@ -108,6 +120,17 @@ export const NodeElement = ({
           y={-radius}
           width={radius * 2}
           height={radius * 2}
+        />
+      ) : null}
+
+      {/* Border image (above the node icon) */}
+      {borderImage ? (
+        <Image
+          image={borderImage}
+          x={-borderSize / 2}
+          y={-borderSize / 2}
+          width={borderSize}
+          height={borderSize}
         />
       ) : null}
 

@@ -29,6 +29,14 @@ export const ConnectionLine = ({ from, to, onDelete, opacity = 1 }: ConnectionLi
         onMouseLeave={() => setIsHovered(false)}
       />
 
+      {/* Visible connection line border */}
+      <Line
+        points={[from.x, from.y, to.x, to.y]}
+        stroke="#292929"
+        strokeWidth={10}
+        listening={false}
+      />
+
       {/* Visible connection line */}
       <Line
         points={[from.x, from.y, to.x, to.y]}
@@ -39,12 +47,7 @@ export const ConnectionLine = ({ from, to, onDelete, opacity = 1 }: ConnectionLi
 
       {/* Delete button (visible on hover) */}
       {isHovered ? (
-        <Group
-          x={midPoint.x}
-          y={midPoint.y}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
+        <Group x={midPoint.x} y={midPoint.y}>
           {/* Background circle */}
           <Circle radius={12} fill="white" stroke="red" strokeWidth={2} onClick={onDelete} />
 

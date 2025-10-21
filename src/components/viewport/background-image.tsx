@@ -49,6 +49,9 @@ export const BackgroundImage = ({
   const opacity = image.opacity ?? 1;
   const rotation = image.rotation ?? 0;
 
+  const inactiveBorder = imageElement ? undefined : '#404040';
+  const activeBorder = '#FFD700';
+
   return (
     <Group
       x={image.x}
@@ -70,7 +73,7 @@ export const BackgroundImage = ({
         <Rect
           width={image.width}
           height={image.height}
-          stroke={isSelected ? '#FFD700' : '#404040'}
+          stroke={isSelected ? activeBorder : inactiveBorder}
           strokeWidth={isSelected ? 4 : 2}
           fill="transparent"
           dash={imageElement ? undefined : [10, 5]}

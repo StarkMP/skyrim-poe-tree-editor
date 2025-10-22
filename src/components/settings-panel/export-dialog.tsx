@@ -39,6 +39,7 @@ type ExportResult = {
 export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
   const nodes = useStore((state) => state.nodes);
   const images = useStore((state) => state.images);
+  const orbits = useStore((state) => state.orbits);
   const viewport = useStore((state) => state.viewport);
   const gridSettings = useStore((state) => state.gridSettings);
   const gamePerks = useStore((state) => state.gamePerks);
@@ -268,6 +269,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       const editorData = {
         nodes,
         images,
+        orbits,
         viewport,
         gridSettings,
       };

@@ -3,6 +3,7 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 import { useEffect, useRef, useState } from 'react';
 import { Layer, Stage } from 'react-konva';
 
+import { MAX_ZOOM, MIN_ZOOM, ZOOM_SPEED } from '@/constants';
 import { useStore } from '@/store';
 import { snapToGrid } from '@/utils/grid-helpers';
 
@@ -11,12 +12,8 @@ import { ConnectionLine } from './connection-line';
 import { ContextMenu } from './context-menu';
 import { GridLayer } from './grid-layer';
 import { NodeElement } from './node-element';
+import { OrbitElement } from './orbit-element';
 import { TempConnectionLine } from './temp-connection-line';
-
-// Zoom constants
-const ZOOM_SPEED = 0.025;
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 1.2;
 
 export const Viewport = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,7 +28,7 @@ export const Viewport = () => {
     canvasX: number;
     canvasY: number;
     targetId?: string;
-    targetType?: 'node' | 'image';
+    targetType?: 'node' | 'image' | 'orbit';
   } | null>(null);
 
   const [isCreatingConnection, setIsCreatingConnection] = useState(false);
@@ -48,6 +45,7 @@ export const Viewport = () => {
   const {
     nodes,
     images,
+    orbits,
     selectedElement,
     viewportCenterRequest,
     viewport,
@@ -55,8 +53,10 @@ export const Viewport = () => {
     selectElement,
     addNode,
     addImage,
+    addOrbit,
     deleteNode,
     deleteImage,
+    deleteOrbit,
     addConnection,
     removeConnection,
     removeAllConnections,
@@ -89,6 +89,9 @@ export const Viewport = () => {
     } else if (type === 'image' && images[id]) {
       elementX = images[id].x + images[id].width / 2;
       elementY = images[id].y + images[id].height / 2;
+    } else if (type === 'orbit' && orbits[id]) {
+      elementX = orbits[id].x;
+      elementY = orbits[id].y;
     } else {
       return;
     }
@@ -99,7 +102,7 @@ export const Viewport = () => {
 
     stage.position({ x: newX, y: newY });
     stage.batchDraw();
-  }, [viewportCenterRequest]);
+  }, [viewportCenterRequest, nodes, images, orbits, stageSize]);
 
   // Set initial size and handle resize
   useEffect(() => {
@@ -278,6 +281,34 @@ export const Viewport = () => {
     setContextMenu(null);
   };
 
+  const handleCreateOrbit = () => {
+    if (contextMenu) {
+      const id = addOrbit(contextMenu.canvasX, contextMenu.canvasY);
+      selectElement(id, 'orbit');
+    }
+    setContextMenu(null);
+  };
+
+  const handleDeleteOrbit = (orbitId: string) => {
+    deleteOrbit(orbitId);
+    setContextMenu(null);
+  };
+
+  const handleOrbitClick = (orbitId: string) => {
+    selectElement(orbitId, 'orbit');
+  };
+
+  const handleOrbitContextMenu = (orbitId: string, x: number, y: number) => {
+    setContextMenu({
+      x,
+      y,
+      canvasX: 0,
+      canvasY: 0,
+      targetId: orbitId,
+      targetType: 'orbit',
+    });
+  };
+
   const handleNodeClick = (nodeId: string) => {
     if (isCreatingConnection && connectionStart && connectionStart.nodeId !== nodeId) {
       addConnection(connectionStart.nodeId, nodeId);
@@ -407,7 +438,7 @@ export const Viewport = () => {
                 })
               : null}
 
-            {/* Nodes - highest z-index */}
+            {/* Nodes */}
             {Object.entries(nodes).map(([id, node]) => (
               <NodeElement
                 key={id}
@@ -430,6 +461,20 @@ export const Viewport = () => {
               />
             ))}
 
+            {/* Orbits - highest z-index (above nodes) */}
+            {Object.entries(orbits).map(([id, orbit]) => (
+              <OrbitElement
+                key={id}
+                id={id}
+                orbit={orbit}
+                isSelected={selectedElement?.id === id ? selectedElement?.type === 'orbit' : null}
+                onSelect={() => handleOrbitClick(id)}
+                onContextMenu={handleOrbitContextMenu}
+                onDragStart={() => setIsDraggingElement(true)}
+                onDragEnd={() => setIsDraggingElement(false)}
+              />
+            ))}
+
             {/* Temporary connection line */}
             {isCreatingConnection && connectionStart ? (
               <TempConnectionLine from={connectionStart} to={mousePos} />
@@ -447,10 +492,12 @@ export const Viewport = () => {
           targetType={contextMenu.targetType}
           onCreateNode={handleCreateNode}
           onCreateImage={handleCreateImage}
+          onCreateOrbit={handleCreateOrbit}
           onStartConnection={handleStartConnection}
           onRemoveAllConnections={handleRemoveAllConnections}
           onDeleteNode={handleDeleteNode}
           onDeleteImage={handleDeleteImage}
+          onDeleteOrbit={handleDeleteOrbit}
           onClose={() => setContextMenu(null)}
         />
       ) : null}

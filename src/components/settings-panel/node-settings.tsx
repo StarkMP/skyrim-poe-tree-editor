@@ -110,7 +110,7 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
 
   return (
     <div className="flex flex-col gap-3">
-      <PanelSection title="Настройки ноды" className="border-none">
+      <PanelSection title="Нода" className="border-none">
         <div className="flex flex-col gap-3">
           {/* Type */}
           <div className="flex flex-col gap-1.5">

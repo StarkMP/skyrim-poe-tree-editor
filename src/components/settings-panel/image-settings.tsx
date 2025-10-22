@@ -95,7 +95,7 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
 
   return (
     <div className="flex flex-col gap-3">
-      <PanelSection title="Настройки изображения" className="border-none">
+      <PanelSection title="Изображение" className="border-none">
         <div className="flex flex-col gap-3">
           {/* Image URL */}
           <div className="flex flex-col gap-1.5">

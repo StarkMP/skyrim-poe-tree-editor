@@ -1,4 +1,4 @@
-import { Hexagon, Image, Search, Trash2 } from 'lucide-react';
+import { Hexagon, Image, Orbit, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -8,22 +8,25 @@ import { useStore } from '@/store';
 const iconByType = {
   node: <Hexagon size={16} />,
   image: <Image size={16} />,
+  orbit: <Orbit size={16} />,
 } as const;
 
 export const ElementsPanel = () => {
   const {
     nodes,
     images,
+    orbits,
     selectedElement,
     selectElement,
     deleteNode,
     deleteImage,
+    deleteOrbit,
     requestCenterOnElement,
   } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  const elements: Array<{ id: string; type: 'node' | 'image'; label: string }> = [
+  const elements: Array<{ id: string; type: 'node' | 'image' | 'orbit'; label: string }> = [
     ...Object.entries(nodes).map(([id, node]) => ({
       id,
       type: 'node' as const,
@@ -34,22 +37,29 @@ export const ElementsPanel = () => {
       type: 'image' as const,
       label: `Изображение (${id.slice(0, 8)})`,
     })),
+    ...Object.keys(orbits).map((id) => ({
+      id,
+      type: 'orbit' as const,
+      label: `Орбита позиций (${id.slice(0, 8)})`,
+    })),
   ];
 
   const filteredElements = elements.filter((element) =>
     element.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCenterOnElement = (id: string, type: 'node' | 'image') => {
+  const handleCenterOnElement = (id: string, type: 'node' | 'image' | 'orbit') => {
     selectElement(id, type);
     requestCenterOnElement(id, type);
   };
 
-  const handleDelete = (id: string, type: 'node' | 'image') => {
+  const handleDelete = (id: string, type: 'node' | 'image' | 'orbit') => {
     if (type === 'node') {
       deleteNode(id);
-    } else {
+    } else if (type === 'image') {
       deleteImage(id);
+    } else {
+      deleteOrbit(id);
     }
   };
 

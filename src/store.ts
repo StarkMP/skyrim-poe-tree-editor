@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import { create } from 'zustand';
 
+import { ORBIT_DEFAULT_POINTS, ORBIT_DEFAULT_RADIUS, ORBIT_DEFAULT_ROTATION } from './constants';
 import gamePerksData from './data/game-perks.json';
 import {
   EditorData,
@@ -8,9 +9,11 @@ import {
   EditorImages,
   EditorNode,
   EditorNodes,
+  EditorOrbits,
   GamePerksData,
   GridSettings,
   NodeType,
+  PositionOrbit,
   ViewportState,
 } from './types';
 
@@ -19,12 +22,12 @@ const MAX_UNDO_STACK_SIZE = 50;
 
 type SelectedElement = {
   id: string;
-  type: 'node' | 'image';
+  type: 'node' | 'image' | 'orbit';
 } | null;
 
 type ViewportCenterRequest = {
   id: string;
-  type: 'node' | 'image';
+  type: 'node' | 'image' | 'orbit';
   timestamp: number;
 } | null;
 
@@ -38,12 +41,16 @@ type UndoAction =
   | { type: 'REMOVE_ALL_CONNECTIONS'; nodeId: string; connections: string[] }
   | { type: 'ADD_IMAGE'; imageId: string }
   | { type: 'DELETE_IMAGE'; imageId: string; imageData: EditorImage }
-  | { type: 'UPDATE_IMAGE'; imageId: string; previousData: Partial<EditorImage> };
+  | { type: 'UPDATE_IMAGE'; imageId: string; previousData: Partial<EditorImage> }
+  | { type: 'ADD_ORBIT'; orbitId: string }
+  | { type: 'DELETE_ORBIT'; orbitId: string; orbitData: PositionOrbit }
+  | { type: 'UPDATE_ORBIT'; orbitId: string; previousData: Partial<PositionOrbit> };
 
 export type Store = {
   // Data
   nodes: EditorNodes;
   images: EditorImages;
+  orbits: EditorOrbits;
   gamePerks: GamePerksData[];
   selectedElement: SelectedElement;
   viewportCenterRequest: ViewportCenterRequest;
@@ -66,11 +73,16 @@ export type Store = {
   updateImage: (id: string, updates: Partial<EditorImage>) => void;
   deleteImage: (id: string) => void;
 
+  // Orbit operations
+  addOrbit: (x: number, y: number) => string;
+  updateOrbit: (id: string, updates: Partial<PositionOrbit>) => void;
+  deleteOrbit: (id: string) => void;
+
   // Selection
-  selectElement: (id: string | null, type: 'node' | 'image' | null) => void;
+  selectElement: (id: string | null, type: 'node' | 'image' | 'orbit' | null) => void;
 
   // Viewport
-  requestCenterOnElement: (id: string, type: 'node' | 'image') => void;
+  requestCenterOnElement: (id: string, type: 'node' | 'image' | 'orbit') => void;
   updateViewport: (viewport: ViewportState) => void;
 
   // Grid settings
@@ -113,6 +125,14 @@ const createDefaultImage = (x: number, y: number): EditorImage => ({
   rotation: 0,
 });
 
+const createDefaultOrbit = (x: number, y: number): PositionOrbit => ({
+  x,
+  y,
+  radius: ORBIT_DEFAULT_RADIUS,
+  pointCount: ORBIT_DEFAULT_POINTS,
+  rotation: ORBIT_DEFAULT_ROTATION,
+});
+
 // Helper to add action to undo stack
 const pushUndoAction = (state: Store, action: UndoAction) => {
   const newStack = [...state.undoStack, action];
@@ -134,6 +154,7 @@ const loadInitialData = () => {
   const defaults = {
     nodes: {},
     images: {},
+    orbits: {},
     viewport: DEFAULT_VIEWPORT,
     gridSettings: DEFAULT_GRID_SETTINGS,
   };
@@ -146,6 +167,7 @@ const loadInitialData = () => {
     return {
       nodes: data.nodes || defaults.nodes,
       images: data.images || defaults.images,
+      orbits: data.orbits || defaults.orbits,
       viewport: data.viewport || defaults.viewport,
       gridSettings: data.gridSettings || defaults.gridSettings,
     };
@@ -162,6 +184,7 @@ export const useStore = create<Store>((set, get) => {
     // Initial state
     nodes: initialData.nodes,
     images: initialData.images,
+    orbits: initialData.orbits,
     gamePerks: gamePerksData as GamePerksData[],
     selectedElement: null,
     viewportCenterRequest: null,
@@ -370,15 +393,68 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
+    // Orbit operations
+    addOrbit: (x: number, y: number) => {
+      const id = nanoid();
+      set((state) => ({
+        ...pushUndoAction(state, { type: 'ADD_ORBIT', orbitId: id }),
+        orbits: {
+          ...state.orbits,
+          [id]: createDefaultOrbit(x, y),
+        },
+      }));
+      get().saveToLocalStorage();
+      return id;
+    },
+
+    updateOrbit: (id: string, updates: Partial<PositionOrbit>) => {
+      set((state) => {
+        const currentOrbit = state.orbits[id];
+        if (!currentOrbit) return state;
+
+        // Save only the fields that are being updated
+        const previousData: Partial<PositionOrbit> = {};
+        for (const key of Object.keys(updates) as Array<keyof PositionOrbit>) {
+          previousData[key] = currentOrbit[key] as any;
+        }
+
+        return {
+          ...pushUndoAction(state, { type: 'UPDATE_ORBIT', orbitId: id, previousData }),
+          orbits: {
+            ...state.orbits,
+            [id]: { ...currentOrbit, ...updates },
+          },
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    deleteOrbit: (id: string) => {
+      set((state) => {
+        const orbitToDelete = state.orbits[id];
+        if (!orbitToDelete) return state;
+
+        const newOrbits = { ...state.orbits };
+        delete newOrbits[id];
+
+        return {
+          ...pushUndoAction(state, { type: 'DELETE_ORBIT', orbitId: id, orbitData: orbitToDelete }),
+          orbits: newOrbits,
+          selectedElement: state.selectedElement?.id === id ? null : state.selectedElement,
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
     // Selection
-    selectElement: (id: string | null, type: 'node' | 'image' | null) => {
+    selectElement: (id: string | null, type: 'node' | 'image' | 'orbit' | null) => {
       set({
         selectedElement: id && type ? { id, type } : null,
       });
     },
 
     // Viewport
-    requestCenterOnElement: (id: string, type: 'node' | 'image') => {
+    requestCenterOnElement: (id: string, type: 'node' | 'image' | 'orbit') => {
       set({
         viewportCenterRequest: { id, type, timestamp: Date.now() },
       });
@@ -584,6 +660,43 @@ export const useStore = create<Store>((set, get) => {
           }
           break;
         }
+
+        case 'ADD_ORBIT': {
+          // Reverse: delete the orbit
+          const newOrbits = { ...state.orbits };
+          delete newOrbits[action.orbitId];
+          set({
+            orbits: newOrbits,
+            selectedElement:
+              state.selectedElement?.id === action.orbitId ? null : state.selectedElement,
+          });
+          break;
+        }
+
+        case 'DELETE_ORBIT': {
+          // Reverse: restore the orbit
+          set({
+            orbits: {
+              ...state.orbits,
+              [action.orbitId]: action.orbitData,
+            },
+          });
+          break;
+        }
+
+        case 'UPDATE_ORBIT': {
+          // Reverse: restore previous values
+          const currentOrbit = state.orbits[action.orbitId];
+          if (currentOrbit) {
+            set({
+              orbits: {
+                ...state.orbits,
+                [action.orbitId]: { ...currentOrbit, ...action.previousData },
+              },
+            });
+          }
+          break;
+        }
       }
 
       get().saveToLocalStorage();
@@ -599,6 +712,7 @@ export const useStore = create<Store>((set, get) => {
       set({
         nodes: data.nodes,
         images: data.images,
+        orbits: data.orbits || {},
         viewport: data.viewport || DEFAULT_VIEWPORT,
         gridSettings: data.gridSettings || DEFAULT_GRID_SETTINGS,
         selectedElement: null,
@@ -612,6 +726,7 @@ export const useStore = create<Store>((set, get) => {
       return {
         nodes: state.nodes,
         images: state.images,
+        orbits: state.orbits,
         viewport: state.viewport,
         gridSettings: state.gridSettings,
       };
@@ -621,6 +736,7 @@ export const useStore = create<Store>((set, get) => {
       set({
         nodes: {},
         images: {},
+        orbits: {},
         viewport: DEFAULT_VIEWPORT,
         gridSettings: DEFAULT_GRID_SETTINGS,
         selectedElement: null,
@@ -635,6 +751,7 @@ export const useStore = create<Store>((set, get) => {
       const data: EditorData = {
         nodes: state.nodes,
         images: state.images,
+        orbits: state.orbits,
         viewport: state.viewport,
         gridSettings: state.gridSettings,
       };
@@ -646,6 +763,7 @@ export const useStore = create<Store>((set, get) => {
       set({
         nodes: data.nodes,
         images: data.images,
+        orbits: data.orbits,
         viewport: data.viewport,
         gridSettings: data.gridSettings,
         undoStack: [], // Start with empty undo stack

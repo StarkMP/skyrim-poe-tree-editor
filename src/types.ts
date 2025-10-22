@@ -51,9 +51,20 @@ export type GridSettings = {
   size: number; // размер ячейки сетки (20-200)
 };
 
+export type PositionOrbit = {
+  x: number; // центр орбиты
+  y: number; // центр орбиты
+  radius: number; // радиус орбиты (расстояние до точек)
+  pointCount: number; // количество точек на орбите (4-16)
+  rotation?: number; // поворот орбиты в градусах (0-360), по умолчанию 0
+};
+
+export type EditorOrbits = { [uid: string]: PositionOrbit };
+
 export type EditorData = {
   nodes: EditorNodes;
   images: EditorImages;
+  orbits?: EditorOrbits;
   viewport?: ViewportState;
   gridSettings?: GridSettings;
 };

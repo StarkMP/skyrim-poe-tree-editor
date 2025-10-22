@@ -10,6 +10,7 @@ import { useStore } from '@/store';
 import { EditorNode, NodeType } from '@/types';
 import { snapToGrid } from '@/utils/grid-helpers';
 import { getNodeRadius } from '@/utils/node-helpers';
+import { findClosestOrbitSnapPoint } from '@/utils/orbit-helpers';
 
 // Border images for each node type
 const nodeBorderImages: Record<NodeType, string> = {
@@ -41,6 +42,7 @@ export const NodeElement = ({
 }: NodeElementProps) => {
   const updateNode = useStore((state) => state.updateNode);
   const gridSettings = useStore((state) => state.gridSettings);
+  const orbits = useStore((state) => state.orbits);
   const radius = getNodeRadius(node.type);
   const [image] = useImage(node.iconUrl || '', 'anonymous');
   const [borderImage] = useImage(nodeBorderImages[node.type], 'anonymous');
@@ -81,23 +83,49 @@ export const NodeElement = ({
   }, [image, radius]);
 
   const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
-    if (gridSettings.enabled) {
-      const snappedX = snapToGrid(e.target.x(), gridSettings.size);
-      const snappedY = snapToGrid(e.target.y(), gridSettings.size);
+    const currentPos = { x: e.target.x(), y: e.target.y() };
+
+    // Приоритет 1: Проверяем снаппинг к орбитам
+    const orbitSnapPoint = findClosestOrbitSnapPoint(currentPos, orbits);
+
+    if (orbitSnapPoint) {
+      // Снаппинг к орбите
+      e.target.position(orbitSnapPoint);
+      onDragMove(orbitSnapPoint);
+    } else if (gridSettings.enabled) {
+      // Приоритет 2: Снаппинг к сетке (если орбиты не найдены)
+      const snappedX = snapToGrid(currentPos.x, gridSettings.size);
+      const snappedY = snapToGrid(currentPos.y, gridSettings.size);
       e.target.position({ x: snappedX, y: snappedY });
       onDragMove({ x: snappedX, y: snappedY });
     } else {
-      onDragMove({ x: e.target.x(), y: e.target.y() });
+      // Без снаппинга
+      onDragMove(currentPos);
     }
   };
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
-    const finalX = gridSettings.enabled
-      ? snapToGrid(e.target.x(), gridSettings.size)
-      : e.target.x();
-    const finalY = gridSettings.enabled
-      ? snapToGrid(e.target.y(), gridSettings.size)
-      : e.target.y();
+    const currentPos = { x: e.target.x(), y: e.target.y() };
+
+    // Приоритет 1: Проверяем снаппинг к орбитам
+    const orbitSnapPoint = findClosestOrbitSnapPoint(currentPos, orbits);
+
+    let finalX: number;
+    let finalY: number;
+
+    if (orbitSnapPoint) {
+      // Снаппинг к орбите
+      finalX = orbitSnapPoint.x;
+      finalY = orbitSnapPoint.y;
+    } else if (gridSettings.enabled) {
+      // Приоритет 2: Снаппинг к сетке
+      finalX = snapToGrid(currentPos.x, gridSettings.size);
+      finalY = snapToGrid(currentPos.y, gridSettings.size);
+    } else {
+      // Без снаппинга
+      finalX = currentPos.x;
+      finalY = currentPos.y;
+    }
 
     updateNode(id, {
       x: finalX,

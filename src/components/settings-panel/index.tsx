@@ -23,9 +23,11 @@ import { ExportDialog } from './export-dialog';
 import { ImageSettings } from './image-settings';
 import { ImportDialog } from './import-dialog';
 import { NodeSettings } from './node-settings';
+import { OrbitSettings } from './orbit-settings';
 
 export const SettingsPanel = () => {
-  const { selectedElement, nodes, images, gridSettings, updateGridSettings, clearAll } = useStore();
+  const { selectedElement, nodes, images, orbits, gridSettings, updateGridSettings, clearAll } =
+    useStore();
 
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -33,6 +35,7 @@ export const SettingsPanel = () => {
 
   const selectedNode = selectedElement?.type === 'node' ? nodes[selectedElement.id] : null;
   const selectedImage = selectedElement?.type === 'image' ? images[selectedElement.id] : null;
+  const selectedOrbit = selectedElement?.type === 'orbit' ? orbits[selectedElement.id] : null;
 
   const hasElements = Object.keys(nodes).length > 0 || Object.keys(images).length > 0;
 
@@ -108,6 +111,8 @@ export const SettingsPanel = () => {
             <NodeSettings nodeId={selectedElement.id} node={selectedNode} />
           ) : selectedImage && selectedElement ? (
             <ImageSettings imageId={selectedElement.id} image={selectedImage} />
+          ) : selectedOrbit && selectedElement ? (
+            <OrbitSettings orbitId={selectedElement.id} orbit={selectedOrbit} />
           ) : (
             <PanelSection>
               <span className="text-center text-xs opacity-50">

@@ -9,6 +9,7 @@ import {
   EditorNode,
   EditorNodes,
   GamePerksData,
+  GridSettings,
   NodeType,
   ViewportState,
 } from './types';
@@ -47,6 +48,7 @@ export type Store = {
   selectedElement: SelectedElement;
   viewportCenterRequest: ViewportCenterRequest;
   viewport: ViewportState;
+  gridSettings: GridSettings;
 
   // Undo stack
   undoStack: UndoAction[];
@@ -70,6 +72,9 @@ export type Store = {
   // Viewport
   requestCenterOnElement: (id: string, type: 'node' | 'image') => void;
   updateViewport: (viewport: ViewportState) => void;
+
+  // Grid settings
+  updateGridSettings: (settings: Partial<GridSettings>) => void;
 
   // Undo operation
   undo: () => void;
@@ -120,32 +125,48 @@ const pushUndoAction = (state: Store, action: UndoAction) => {
   return { undoStack: newStack };
 };
 
-export const useStore = create<Store>((set, get) => {
-  // Load initial data from localStorage
-  let initialNodes = {};
-  let initialImages = {};
-  let initialViewport = { x: 0, y: 0, scale: 1 };
+// Default values for initial state
+const DEFAULT_VIEWPORT: ViewportState = { x: 0, y: 0, scale: 1 };
+const DEFAULT_GRID_SETTINGS: GridSettings = { enabled: false, size: 100 };
+
+// Helper to load initial data from localStorage
+const loadInitialData = () => {
+  const defaults = {
+    nodes: {},
+    images: {},
+    viewport: DEFAULT_VIEWPORT,
+    gridSettings: DEFAULT_GRID_SETTINGS,
+  };
 
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const data: EditorData = JSON.parse(stored);
-      initialNodes = data.nodes || {};
-      initialImages = data.images || {};
-      initialViewport = data.viewport || { x: 0, y: 0, scale: 1 };
-    }
+    if (!stored) return defaults;
+
+    const data: EditorData = JSON.parse(stored);
+    return {
+      nodes: data.nodes || defaults.nodes,
+      images: data.images || defaults.images,
+      viewport: data.viewport || defaults.viewport,
+      gridSettings: data.gridSettings || defaults.gridSettings,
+    };
   } catch (error) {
     console.error('Failed to load from localStorage:', error);
+    return defaults;
   }
+};
+
+export const useStore = create<Store>((set, get) => {
+  const initialData = loadInitialData();
 
   return {
     // Initial state
-    nodes: initialNodes,
-    images: initialImages,
+    nodes: initialData.nodes,
+    images: initialData.images,
     gamePerks: gamePerksData as GamePerksData[],
     selectedElement: null,
     viewportCenterRequest: null,
-    viewport: initialViewport,
+    viewport: initialData.viewport,
+    gridSettings: initialData.gridSettings,
     undoStack: [],
 
     // Node operations
@@ -368,6 +389,14 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
+    // Grid settings
+    updateGridSettings: (settings: Partial<GridSettings>) => {
+      set((state) => ({
+        gridSettings: { ...state.gridSettings, ...settings },
+      }));
+      get().saveToLocalStorage();
+    },
+
     // Undo operation
     undo: () => {
       const state = get();
@@ -570,7 +599,8 @@ export const useStore = create<Store>((set, get) => {
       set({
         nodes: data.nodes,
         images: data.images,
-        viewport: data.viewport || { x: 0, y: 0, scale: 1 },
+        viewport: data.viewport || DEFAULT_VIEWPORT,
+        gridSettings: data.gridSettings || DEFAULT_GRID_SETTINGS,
         selectedElement: null,
         undoStack: [], // Clear undo stack on import
       });
@@ -583,6 +613,7 @@ export const useStore = create<Store>((set, get) => {
         nodes: state.nodes,
         images: state.images,
         viewport: state.viewport,
+        gridSettings: state.gridSettings,
       };
     },
 
@@ -590,7 +621,8 @@ export const useStore = create<Store>((set, get) => {
       set({
         nodes: {},
         images: {},
-        viewport: { x: 0, y: 0, scale: 1 },
+        viewport: DEFAULT_VIEWPORT,
+        gridSettings: DEFAULT_GRID_SETTINGS,
         selectedElement: null,
         undoStack: [], // Clear undo stack
       });
@@ -604,25 +636,20 @@ export const useStore = create<Store>((set, get) => {
         nodes: state.nodes,
         images: state.images,
         viewport: state.viewport,
+        gridSettings: state.gridSettings,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     },
 
     loadFromLocalStorage: () => {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const data: EditorData = JSON.parse(stored);
-          set({
-            nodes: data.nodes || {},
-            images: data.images || {},
-            viewport: data.viewport || { x: 0, y: 0, scale: 1 },
-            undoStack: [], // Start with empty undo stack
-          });
-        }
-      } catch (error) {
-        console.error('Failed to load from localStorage:', error);
-      }
+      const data = loadInitialData();
+      set({
+        nodes: data.nodes,
+        images: data.images,
+        viewport: data.viewport,
+        gridSettings: data.gridSettings,
+        undoStack: [], // Start with empty undo stack
+      });
     },
   };
 });

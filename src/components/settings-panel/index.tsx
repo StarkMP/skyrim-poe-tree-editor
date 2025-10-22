@@ -25,7 +25,7 @@ import { ImportDialog } from './import-dialog';
 import { NodeSettings } from './node-settings';
 
 export const SettingsPanel = () => {
-  const { selectedElement, nodes, images, clearAll } = useStore();
+  const { selectedElement, nodes, images, gridSettings, updateGridSettings, clearAll } = useStore();
 
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -77,12 +77,28 @@ export const SettingsPanel = () => {
               <Label htmlFor="positioning-grid" className="text-xs">
                 Сетка позиционирования
               </Label>
-              <Switch id="positioning-grid" />
+              <Switch
+                id="positioning-grid"
+                checked={gridSettings.enabled}
+                onCheckedChange={(checked) => updateGridSettings({ enabled: checked })}
+              />
             </div>
-            {/* если сетка позиционирование === false, то ниже блок дизейблим (pointer-events: none и opacity на opacity-50) */}
-            <div className="flex items-center gap-4 justify-between">
-              <Slider className="my-2" defaultValue={[20]} max={100} step={5} />
-              <Badge variant="secondary">20px</Badge>
+            <div
+              className="flex items-center gap-4 justify-between"
+              style={{
+                pointerEvents: gridSettings.enabled ? 'auto' : 'none',
+                opacity: gridSettings.enabled ? 1 : 0.5,
+              }}
+            >
+              <Slider
+                className="my-2"
+                value={[gridSettings.size]}
+                onValueChange={(value) => updateGridSettings({ size: value[0] })}
+                max={200}
+                min={60}
+                step={20}
+              />
+              <Badge variant="secondary">{gridSettings.size}px</Badge>
             </div>
           </div>
         </PanelSection>

@@ -1,20 +1,17 @@
-import { NodeType } from '../types';
+import { NODE_RADIUS_LARGE, NODE_RADIUS_MASTER, NODE_RADIUS_SMALL } from '@/constants';
 
-export const RADIUS_SMALL = 20;
-export const RADIUS_LARGE = 30;
-export const RADIUS_MASTER = 40;
-export const STROKE_WIDTH = 8;
+import { NodeType } from '../types';
 
 export function getNodeRadius(type: NodeType): number {
   switch (type) {
     case NodeType.LargeNode: {
-      return RADIUS_LARGE;
+      return NODE_RADIUS_LARGE;
     }
     case NodeType.MasterNode: {
-      return RADIUS_MASTER;
+      return NODE_RADIUS_MASTER;
     }
     default: {
-      return RADIUS_SMALL;
+      return NODE_RADIUS_SMALL;
     }
   }
 }

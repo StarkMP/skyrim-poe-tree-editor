@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Layer, Stage } from 'react-konva';
 
 import { useStore } from '@/store';
+import { snapToGrid } from '@/utils/grid-helpers';
 
 import { BackgroundImage } from './background-image';
 import { ConnectionLine } from './connection-line';
 import { ContextMenu } from './context-menu';
+import { GridLayer } from './grid-layer';
 import { NodeElement } from './node-element';
 import { TempConnectionLine } from './temp-connection-line';
 
@@ -49,6 +51,7 @@ export const Viewport = () => {
     selectedElement,
     viewportCenterRequest,
     viewport,
+    gridSettings,
     selectElement,
     addNode,
     addImage,
@@ -219,7 +222,16 @@ export const Viewport = () => {
   // Context menu actions
   const handleCreateNode = () => {
     if (contextMenu) {
-      const id = addNode(contextMenu.canvasX, contextMenu.canvasY);
+      let x = contextMenu.canvasX;
+      let y = contextMenu.canvasY;
+
+      // Apply snapping if grid is enabled
+      if (gridSettings.enabled) {
+        x = snapToGrid(x, gridSettings.size);
+        y = snapToGrid(y, gridSettings.size);
+      }
+
+      const id = addNode(x, y);
       selectElement(id, 'node');
     }
     setContextMenu(null);
@@ -227,7 +239,16 @@ export const Viewport = () => {
 
   const handleCreateImage = () => {
     if (contextMenu) {
-      const id = addImage(contextMenu.canvasX, contextMenu.canvasY);
+      let x = contextMenu.canvasX;
+      let y = contextMenu.canvasY;
+
+      // Apply snapping if grid is enabled
+      if (gridSettings.enabled) {
+        x = snapToGrid(x, gridSettings.size);
+        y = snapToGrid(y, gridSettings.size);
+      }
+
+      const id = addImage(x, y);
       selectElement(id, 'image');
     }
     setContextMenu(null);
@@ -326,7 +347,16 @@ export const Viewport = () => {
           onClick={handleStageClick}
         >
           <Layer>
-            {/* Background Images - lowest z-index */}
+            {/* Grid - lowest z-index */}
+            <GridLayer
+              gridSize={gridSettings.size}
+              enabled={gridSettings.enabled}
+              stagePos={stageRef.current?.position() || { x: 0, y: 0 }}
+              stageSize={stageSize}
+              scale={stageRef.current?.scaleX() || 1}
+            />
+
+            {/* Background Images */}
             {Object.entries(images).map(([id, image]) => (
               <BackgroundImage
                 key={id}

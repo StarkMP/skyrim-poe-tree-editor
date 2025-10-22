@@ -46,10 +46,16 @@ export type ViewportState = {
   scale: number;
 };
 
+export type GridSettings = {
+  enabled: boolean;
+  size: number; // размер ячейки сетки (20-200)
+};
+
 export type EditorData = {
   nodes: EditorNodes;
   images: EditorImages;
   viewport?: ViewportState;
+  gridSettings?: GridSettings;
 };
 
 export type ExportNode = {

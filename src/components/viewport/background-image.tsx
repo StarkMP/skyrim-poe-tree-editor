@@ -4,6 +4,7 @@ import useImage from 'use-image';
 
 import { useStore } from '@/store';
 import { EditorImage } from '@/types';
+import { snapToGrid } from '@/utils/grid-helpers';
 
 type BackgroundImageProps = {
   id: string;
@@ -24,13 +25,28 @@ export const BackgroundImage = ({
   onDragStart,
   onDragEnd,
 }: BackgroundImageProps) => {
-  const { updateImage } = useStore();
+  const { updateImage, gridSettings } = useStore();
   const [imageElement] = useImage(image.imageUrl || '', 'anonymous');
 
+  const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
+    if (gridSettings.enabled) {
+      const snappedX = snapToGrid(e.target.x(), gridSettings.size);
+      const snappedY = snapToGrid(e.target.y(), gridSettings.size);
+      e.target.position({ x: snappedX, y: snappedY });
+    }
+  };
+
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
+    const finalX = gridSettings.enabled
+      ? snapToGrid(e.target.x(), gridSettings.size)
+      : e.target.x();
+    const finalY = gridSettings.enabled
+      ? snapToGrid(e.target.y(), gridSettings.size)
+      : e.target.y();
+
     updateImage(id, {
-      x: e.target.x(),
-      y: e.target.y(),
+      x: finalX,
+      y: finalY,
     });
     onDragEnd();
   };
@@ -58,6 +74,7 @@ export const BackgroundImage = ({
       y={image.y}
       draggable={isSelected === true}
       onDragStart={onDragStart}
+      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
       onContextMenu={handleContextMenu}
       onClick={handleClick}

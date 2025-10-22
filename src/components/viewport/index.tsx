@@ -46,6 +46,7 @@ export const Viewport = () => {
     nodes,
     images,
     orbits,
+    connections,
     selectedElement,
     viewportCenterRequest,
     viewport,
@@ -345,23 +346,9 @@ export const Viewport = () => {
     });
   };
 
-  // Get all connections
-  const connections: Array<{ id: string; fromId: string; toId: string }> = [];
-  const processedPairs = new Set<string>();
-
-  for (const [nodeId, node] of Object.entries(nodes)) {
-    for (const connectedId of node.connections) {
-      const pairKey = [nodeId, connectedId].toSorted().join('-');
-      if (!processedPairs.has(pairKey)) {
-        connections.push({
-          id: pairKey,
-          fromId: nodeId,
-          toId: connectedId,
-        });
-        processedPairs.add(pairKey);
-      }
-    }
-  }
+  const handleConnectionClick = (connectionId: string) => {
+    selectElement(connectionId, 'connection');
+  };
 
   return (
     <div ref={containerRef} className="size-full bg-[#080B10]">
@@ -402,40 +389,63 @@ export const Viewport = () => {
             ))}
 
             {/* Connections - middle z-index (hide if node is being dragged) */}
-            {connections.map((conn) => {
-              const fromNode = nodes[conn.fromId];
-              const toNode = nodes[conn.toId];
+            {Object.entries(connections).map(([connectionId, connection]) => {
+              const fromNode = nodes[connection.fromId];
+              const toNode = nodes[connection.toId];
               if (!fromNode || !toNode) return null;
 
               // Hide connection if one of its nodes is being dragged
               const isHidden =
-                draggingNodeId && (conn.fromId === draggingNodeId || conn.toId === draggingNodeId);
+                draggingNodeId &&
+                (connection.fromId === draggingNodeId || connection.toId === draggingNodeId);
 
               return (
                 <ConnectionLine
-                  key={conn.id}
+                  key={connectionId}
                   from={fromNode}
                   to={toNode}
-                  onDelete={() => removeConnection(conn.fromId, conn.toId)}
+                  curvature={connection.curvature}
+                  isSelected={
+                    selectedElement?.id === connectionId
+                      ? selectedElement?.type === 'connection'
+                      : null
+                  }
+                  onSelect={() => handleConnectionClick(connectionId)}
                   opacity={isHidden ? 0 : 1}
                 />
               );
             })}
 
             {/* Temporary lines while dragging node */}
-            {draggingNodeId && draggingNodePos && nodes[draggingNodeId]
-              ? nodes[draggingNodeId].connections.map((connectedId) => {
-                  const connectedNode = nodes[connectedId];
-                  if (!connectedNode) return null;
+            {draggingNodeId && draggingNodePos
+              ? Object.entries(connections)
+                  .filter(
+                    ([, conn]) => conn.fromId === draggingNodeId || conn.toId === draggingNodeId
+                  )
+                  .map(([connId, connection]) => {
+                    const connectedId =
+                      connection.fromId === draggingNodeId ? connection.toId : connection.fromId;
+                    const connectedNode = nodes[connectedId];
+                    if (!connectedNode) return null;
 
-                  return (
-                    <TempConnectionLine
-                      key={`temp-${draggingNodeId}-${connectedId}`}
-                      from={draggingNodePos}
-                      to={{ x: connectedNode.x, y: connectedNode.y }}
-                    />
-                  );
-                })
+                    // Check if we need to invert curvature based on direction
+                    // If the stored connection goes from connectedId to draggingNodeId,
+                    // but we're drawing from draggingNodeId to connectedId, invert curvature
+                    const shouldInvertCurvature =
+                      connection.fromId === connectedId && connection.toId === draggingNodeId;
+
+                    const curvature = connection.curvature ?? 0;
+                    const adjustedCurvature = shouldInvertCurvature ? -curvature : curvature;
+
+                    return (
+                      <TempConnectionLine
+                        key={`temp-${connId}`}
+                        from={draggingNodePos}
+                        to={{ x: connectedNode.x, y: connectedNode.y }}
+                        curvature={adjustedCurvature}
+                      />
+                    );
+                  })
               : null}
 
             {/* Nodes */}

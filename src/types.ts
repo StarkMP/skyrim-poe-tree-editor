@@ -23,10 +23,17 @@ export type EditorNode = {
   keywords: string[];
   x: number;
   y: number;
-  connections: NodeUID[];
 };
 
 export type EditorNodes = { [uid: NodeUID]: EditorNode };
+
+export type Connection = {
+  fromId: string;
+  toId: string;
+  curvature: number; // -100 до 100, где 0 = прямая линия
+};
+
+export type EditorConnections = { [uid: string]: Connection };
 
 export type EditorImage = {
   width: number;
@@ -65,6 +72,7 @@ export type EditorData = {
   nodes: EditorNodes;
   images: EditorImages;
   orbits?: EditorOrbits;
+  connections?: EditorConnections;
   viewport?: ViewportState;
   gridSettings?: GridSettings;
 };
@@ -78,7 +86,6 @@ export type ExportNode = {
   keywords: string[];
   x: number;
   y: number;
-  connections: string[];
 };
 
 export type ExportNodes = { [uid: NodeUID]: ExportNode };
@@ -87,6 +94,7 @@ export type ExportData = {
   width: number;
   height: number;
   nodes: ExportNodes;
+  connections: EditorConnections;
 };
 
 export type ImportData = EditorData;

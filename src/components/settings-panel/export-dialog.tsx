@@ -40,6 +40,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
   const nodes = useStore((state) => state.nodes);
   const images = useStore((state) => state.images);
   const orbits = useStore((state) => state.orbits);
+  const connections = useStore((state) => state.connections);
   const viewport = useStore((state) => state.viewport);
   const gridSettings = useStore((state) => state.gridSettings);
   const gamePerks = useStore((state) => state.gamePerks);
@@ -270,6 +271,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         nodes,
         images,
         orbits,
+        connections,
         viewport,
         gridSettings,
       };
@@ -291,7 +293,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
           keywords: node.keywords,
           x: node.x - bounds.x,
           y: node.y - bounds.y,
-          connections: node.connections,
         };
       }
 
@@ -299,6 +300,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         width: bounds.width,
         height: bounds.height,
         nodes: exportNodes,
+        connections,
       };
       const gameDataBlob = new Blob([JSON.stringify(gameData, null, 2)], {
         type: 'application/json',

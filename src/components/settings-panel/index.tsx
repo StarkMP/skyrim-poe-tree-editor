@@ -19,6 +19,7 @@ import { Badge } from '../ui/badge';
 import { Label } from '../ui/label';
 import { Slider } from '../ui/slider';
 import { Switch } from '../ui/switch';
+import { ConnectionSettings } from './connection-settings';
 import { ExportDialog } from './export-dialog';
 import { ImageSettings } from './image-settings';
 import { ImportDialog } from './import-dialog';
@@ -26,8 +27,16 @@ import { NodeSettings } from './node-settings';
 import { OrbitSettings } from './orbit-settings';
 
 export const SettingsPanel = () => {
-  const { selectedElement, nodes, images, orbits, gridSettings, updateGridSettings, clearAll } =
-    useStore();
+  const {
+    selectedElement,
+    nodes,
+    images,
+    orbits,
+    connections,
+    gridSettings,
+    updateGridSettings,
+    clearAll,
+  } = useStore();
 
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -36,6 +45,8 @@ export const SettingsPanel = () => {
   const selectedNode = selectedElement?.type === 'node' ? nodes[selectedElement.id] : null;
   const selectedImage = selectedElement?.type === 'image' ? images[selectedElement.id] : null;
   const selectedOrbit = selectedElement?.type === 'orbit' ? orbits[selectedElement.id] : null;
+  const selectedConnection =
+    selectedElement?.type === 'connection' ? connections[selectedElement.id] : null;
 
   const hasElements = Object.keys(nodes).length > 0 || Object.keys(images).length > 0;
 
@@ -113,6 +124,8 @@ export const SettingsPanel = () => {
             <ImageSettings imageId={selectedElement.id} image={selectedImage} />
           ) : selectedOrbit && selectedElement ? (
             <OrbitSettings orbitId={selectedElement.id} orbit={selectedOrbit} />
+          ) : selectedConnection && selectedElement ? (
+            <ConnectionSettings connectionId={selectedElement.id} connection={selectedConnection} />
           ) : (
             <PanelSection>
               <span className="text-center text-xs opacity-50">

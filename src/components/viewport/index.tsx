@@ -5,7 +5,7 @@ import { Layer, Stage } from 'react-konva';
 
 import { MAX_ZOOM, MIN_ZOOM, ZOOM_SPEED } from '@/constants';
 import { useStore } from '@/store';
-import { snapToGrid } from '@/utils/grid-helpers';
+import { snapToRotatedGrid } from '@/utils/grid-helpers';
 
 import { BackgroundImage } from './background-image';
 import { ConnectionLine } from './connection-line';
@@ -231,8 +231,9 @@ export const Viewport = () => {
 
       // Apply snapping if grid is enabled
       if (gridSettings.enabled) {
-        x = snapToGrid(x, gridSettings.size);
-        y = snapToGrid(y, gridSettings.size);
+        const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
+        x = snapped.x;
+        y = snapped.y;
       }
 
       const id = addNode(x, y);
@@ -248,8 +249,9 @@ export const Viewport = () => {
 
       // Apply snapping if grid is enabled
       if (gridSettings.enabled) {
-        x = snapToGrid(x, gridSettings.size);
-        y = snapToGrid(y, gridSettings.size);
+        const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
+        x = snapped.x;
+        y = snapped.y;
       }
 
       const id = addImage(x, y);
@@ -369,6 +371,7 @@ export const Viewport = () => {
             <GridLayer
               gridSize={gridSettings.size}
               enabled={gridSettings.enabled}
+              rotation={gridSettings.rotation}
               stagePos={stageRef.current?.position() || { x: 0, y: 0 }}
               stageSize={stageSize}
               scale={stageRef.current?.scaleX() || 1}

@@ -4,7 +4,7 @@ import useImage from 'use-image';
 
 import { useStore } from '@/store';
 import { EditorImage } from '@/types';
-import { snapToGrid } from '@/utils/grid-helpers';
+import { snapToRotatedGrid } from '@/utils/grid-helpers';
 
 type BackgroundImageProps = {
   id: string;
@@ -30,19 +30,33 @@ export const BackgroundImage = ({
 
   const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
     if (gridSettings.enabled) {
-      const snappedX = snapToGrid(e.target.x(), gridSettings.size);
-      const snappedY = snapToGrid(e.target.y(), gridSettings.size);
-      e.target.position({ x: snappedX, y: snappedY });
+      const snapped = snapToRotatedGrid(
+        e.target.x(),
+        e.target.y(),
+        gridSettings.size,
+        gridSettings.rotation
+      );
+      e.target.position(snapped);
     }
   };
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
-    const finalX = gridSettings.enabled
-      ? snapToGrid(e.target.x(), gridSettings.size)
-      : e.target.x();
-    const finalY = gridSettings.enabled
-      ? snapToGrid(e.target.y(), gridSettings.size)
-      : e.target.y();
+    let finalX: number;
+    let finalY: number;
+
+    if (gridSettings.enabled) {
+      const snapped = snapToRotatedGrid(
+        e.target.x(),
+        e.target.y(),
+        gridSettings.size,
+        gridSettings.rotation
+      );
+      finalX = snapped.x;
+      finalY = snapped.y;
+    } else {
+      finalX = e.target.x();
+      finalY = e.target.y();
+    }
 
     updateImage(id, {
       x: finalX,

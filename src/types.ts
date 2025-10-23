@@ -56,6 +56,7 @@ export type ViewportState = {
 export type GridSettings = {
   enabled: boolean;
   size: number; // размер ячейки сетки (20-200)
+  rotation: number; // угол поворота в градусах (0-360)
 };
 
 export type PositionOrbit = {

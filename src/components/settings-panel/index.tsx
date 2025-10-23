@@ -98,21 +98,40 @@ export const SettingsPanel = () => {
               />
             </div>
             <div
-              className="flex items-center gap-4 justify-between"
+              className="flex flex-col gap-3"
               style={{
                 pointerEvents: gridSettings.enabled ? 'auto' : 'none',
                 opacity: gridSettings.enabled ? 1 : 0.5,
               }}
             >
+              <div className="flex items-center gap-4 justify-between">
+                <Label htmlFor="grid-size" className="text-xs">
+                  Размер ячейки
+                </Label>
+                <Badge variant="secondary">{gridSettings.size}px</Badge>
+              </div>
               <Slider
-                className="my-2"
+                id="grid-size"
                 value={[gridSettings.size]}
                 onValueChange={(value) => updateGridSettings({ size: value[0] })}
                 max={200}
                 min={60}
                 step={20}
               />
-              <Badge variant="secondary">{gridSettings.size}px</Badge>
+              <div className="flex items-center gap-4 justify-between">
+                <Label htmlFor="grid-rotation" className="text-xs">
+                  Поворот сетки
+                </Label>
+                <Badge variant="secondary">{gridSettings.rotation}°</Badge>
+              </div>
+              <Slider
+                id="grid-rotation"
+                value={[gridSettings.rotation]}
+                onValueChange={(value) => updateGridSettings({ rotation: value[0] })}
+                max={360}
+                min={0}
+                step={5}
+              />
             </div>
           </div>
         </PanelSection>

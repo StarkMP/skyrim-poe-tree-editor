@@ -8,6 +8,58 @@ export const snapToGrid = (value: number, gridSize: number): number =>
   Math.round(value / gridSize) * gridSize;
 
 /**
+ * Поворачивает точку вокруг начала координат
+ * @param x - координата X
+ * @param y - координата Y
+ * @param angle - угол поворота в градусах
+ * @returns повернутые координаты
+ */
+const rotatePoint = (x: number, y: number, angle: number): { x: number; y: number } => {
+  const rad = (angle * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return {
+    x: x * cos - y * sin,
+    y: x * sin + y * cos,
+  };
+};
+
+/**
+ * Выравнивает координаты по повернутой сетке
+ * @param x - координата X
+ * @param y - координата Y
+ * @param gridSize - размер ячейки сетки
+ * @param rotation - угол поворота сетки в градусах
+ * @returns выровненные координаты
+ */
+export const snapToRotatedGrid = (
+  x: number,
+  y: number,
+  gridSize: number,
+  rotation: number
+): { x: number; y: number } => {
+  // Если поворот 0, используем обычное выравнивание
+  if (rotation === 0) {
+    return {
+      x: snapToGrid(x, gridSize),
+      y: snapToGrid(y, gridSize),
+    };
+  }
+
+  // 1. Поворачиваем точку в обратную сторону
+  const rotated = rotatePoint(x, y, -rotation);
+
+  // 2. Выравниваем по обычной сетке
+  const snapped = {
+    x: snapToGrid(rotated.x, gridSize),
+    y: snapToGrid(rotated.y, gridSize),
+  };
+
+  // 3. Поворачиваем обратно
+  return rotatePoint(snapped.x, snapped.y, rotation);
+};
+
+/**
  * Вычисляет видимую область viewport в мировых координатах
  * @param stagePos - позиция stage
  * @param stageSize - размер stage

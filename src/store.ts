@@ -154,7 +154,7 @@ const pushUndoAction = (state: Store, action: UndoAction) => {
 
 // Default values for initial state
 const DEFAULT_VIEWPORT: ViewportState = { x: 0, y: 0, scale: 1 };
-const DEFAULT_GRID_SETTINGS: GridSettings = { enabled: false, size: 100 };
+const DEFAULT_GRID_SETTINGS: GridSettings = { enabled: false, size: 100, rotation: 0 };
 
 // Helper to load initial data from localStorage
 const loadInitialData = () => {

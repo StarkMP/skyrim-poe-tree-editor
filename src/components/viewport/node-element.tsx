@@ -8,7 +8,7 @@ import masterNodeBorder from '@/assets/master-node-border.png';
 import smallNodeBorder from '@/assets/small-node-border.png';
 import { useStore } from '@/store';
 import { EditorNode, NodeType } from '@/types';
-import { snapToGrid } from '@/utils/grid-helpers';
+import { snapToRotatedGrid } from '@/utils/grid-helpers';
 import { getNodeRadius } from '@/utils/node-helpers';
 import { findClosestOrbitSnapPoint } from '@/utils/orbit-helpers';
 
@@ -94,10 +94,14 @@ export const NodeElement = ({
       onDragMove(orbitSnapPoint);
     } else if (gridSettings.enabled) {
       // Приоритет 2: Снаппинг к сетке (если орбиты не найдены)
-      const snappedX = snapToGrid(currentPos.x, gridSettings.size);
-      const snappedY = snapToGrid(currentPos.y, gridSettings.size);
-      e.target.position({ x: snappedX, y: snappedY });
-      onDragMove({ x: snappedX, y: snappedY });
+      const snapped = snapToRotatedGrid(
+        currentPos.x,
+        currentPos.y,
+        gridSettings.size,
+        gridSettings.rotation
+      );
+      e.target.position(snapped);
+      onDragMove(snapped);
     } else {
       // Без снаппинга
       onDragMove(currentPos);
@@ -119,8 +123,14 @@ export const NodeElement = ({
       finalY = orbitSnapPoint.y;
     } else if (gridSettings.enabled) {
       // Приоритет 2: Снаппинг к сетке
-      finalX = snapToGrid(currentPos.x, gridSettings.size);
-      finalY = snapToGrid(currentPos.y, gridSettings.size);
+      const snapped = snapToRotatedGrid(
+        currentPos.x,
+        currentPos.y,
+        gridSettings.size,
+        gridSettings.rotation
+      );
+      finalX = snapped.x;
+      finalY = snapped.y;
     } else {
       // Без снаппинга
       finalX = currentPos.x;

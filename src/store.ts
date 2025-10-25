@@ -55,7 +55,8 @@ export type Store = {
   images: EditorImages;
   orbits: EditorOrbits;
   connections: EditorConnections;
-  gamePerks: GamePerksData[];
+  gamePerks: GamePerksData;
+  gamePerkIdsSet: Set<string>; // Cached set for O(1) validation
   selectedElement: SelectedElement;
   viewportCenterRequest: ViewportCenterRequest;
   viewport: ViewportState;
@@ -117,7 +118,7 @@ const createDefaultNode = (x: number, y: number): EditorNode => ({
   iconUrl: '',
   title: '',
   description: '',
-  requiredLevel: null,
+  reqDescription: '',
   keywords: [],
   x,
   y,
@@ -190,6 +191,7 @@ const loadInitialData = () => {
 
 export const useStore = create<Store>((set, get) => {
   const initialData = loadInitialData();
+  const gamePerks = gamePerksData as GamePerksData;
 
   return {
     // Initial state
@@ -197,7 +199,8 @@ export const useStore = create<Store>((set, get) => {
     images: initialData.images,
     orbits: initialData.orbits,
     connections: initialData.connections,
-    gamePerks: gamePerksData as GamePerksData[],
+    gamePerks,
+    gamePerkIdsSet: new Set(Object.keys(gamePerks)),
     selectedElement: null,
     viewportCenterRequest: null,
     viewport: initialData.viewport,

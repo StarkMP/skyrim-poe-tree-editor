@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { ComboboxOption } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PanelSection } from '@/components/ui/panel-section';
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { VirtualizedCombobox } from '@/components/ui/virtualized-combobox';
 import { useStore } from '@/store';
 import { EditorNode, NodeType } from '@/types';
 
@@ -21,10 +23,23 @@ type NodeSettingsProps = {
 };
 
 export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
-  const { updateNode, gamePerks } = useStore();
+  // Optimized selectors - only subscribe to what we need
+  const updateNode = useStore((state) => state.updateNode);
+  const gamePerks = useStore((state) => state.gamePerks);
 
   const [iconUrlInput, setIconUrlInput] = useState(node.iconUrl);
   const [iconUrlError, setIconUrlError] = useState('');
+
+  // Memoize perk options to avoid recreating on every render
+  const perkOptions = useMemo<ComboboxOption[]>(
+    () =>
+      Object.entries(gamePerks).map(([id, perk]) => ({
+        value: id,
+        label: `${perk.name} (${id})`,
+        searchText: `${perk.name} ${id}`.toLowerCase(),
+      })),
+    [gamePerks]
+  );
 
   // Update input when node changes
   useEffect(() => {
@@ -37,13 +52,13 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
   };
 
   const handlePerkChange = (perkId: string) => {
-    const perk = gamePerks.find((p) => p.id === perkId);
+    const perk = gamePerks[perkId];
+
     if (perk) {
       updateNode(nodeId, {
-        perkId: perk.id,
+        perkId: perkId,
         title: perk.name,
         description: perk.description,
-        requiredLevel: perk.requiredLevel,
       });
     }
   };
@@ -52,11 +67,8 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
     updateNode(nodeId, { description: value });
   };
 
-  const handleRequiredLevelChange = (value: string) => {
-    const level = value === '' ? null : Number.parseInt(value);
-    if (value === '' || (!Number.isNaN(level) && level !== null && level >= 0)) {
-      updateNode(nodeId, { requiredLevel: level });
-    }
+  const handleReqDescriptionChange = (value: string) => {
+    updateNode(nodeId, { reqDescription: value });
   };
 
   const handleKeywordsChange = (value: string) => {
@@ -159,23 +171,21 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
             </div>
           </div>
 
-          {/* Perk */}
+          {/* Perk - Using Combobox with search for better performance */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="node-perk" className="text-xs">
               Перк
             </Label>
-            <Select value={node.perkId} onValueChange={handlePerkChange}>
-              <SelectTrigger id="node-perk" className="h-8 text-xs">
-                <SelectValue placeholder="Выберите перк" />
-              </SelectTrigger>
-              <SelectContent>
-                {gamePerks.map((perk) => (
-                  <SelectItem key={perk.id} value={perk.id} className="text-xs">
-                    {perk.name} ({perk.id})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <VirtualizedCombobox
+              options={perkOptions}
+              value={node.perkId}
+              onValueChange={handlePerkChange}
+              placeholder="Выберите перк"
+              searchPlaceholder="Поиск перка..."
+              emptyText="Перк не найден"
+              className="h-8 text-xs"
+              height="300px"
+            />
           </div>
 
           {/* Title */}
@@ -208,17 +218,15 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
 
           {/* Required Level */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="node-level" className="text-xs">
-              Требуемый уровень
+            <Label htmlFor="node-requirements" className="text-xs">
+              Требования
             </Label>
-            <Input
-              id="node-level"
-              type="number"
-              value={node.requiredLevel ?? ''}
-              onChange={(e) => handleRequiredLevelChange(e.target.value)}
-              className="h-8 text-xs"
-              placeholder="Не указан"
-              min="0"
+            <Textarea
+              id="node-requirements"
+              value={node.reqDescription}
+              onChange={(e) => handleReqDescriptionChange(e.target.value)}
+              className="text-xs min-h-[60px]"
+              placeholder="Введите требования для активации ноды"
             />
           </div>
 

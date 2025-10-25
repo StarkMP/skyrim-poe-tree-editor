@@ -43,7 +43,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
   const connections = useStore((state) => state.connections);
   const viewport = useStore((state) => state.viewport);
   const gridSettings = useStore((state) => state.gridSettings);
-  const gamePerks = useStore((state) => state.gamePerks);
+  const gamePerkIdsSet = useStore((state) => state.gamePerkIdsSet);
 
   const [errors, setErrors] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
@@ -51,7 +51,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
 
   const validateData = (): string[] => {
     const validationErrors: string[] = [];
-    const gamePerkIds = new Set(gamePerks.map((p) => p.id));
 
     // Validate nodes - group errors by node
     for (const [nodeId, node] of Object.entries(nodes)) {
@@ -59,7 +58,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
 
       if (!node.perkId) {
         nodeErrors.push('не выбран перк');
-      } else if (!gamePerkIds.has(node.perkId)) {
+      } else if (!gamePerkIdsSet.has(node.perkId)) {
         nodeErrors.push(`перк "${node.perkId}" не существует`);
       }
 
@@ -326,7 +325,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
           perkId: node.perkId,
           title: node.title,
           description: node.description,
-          requiredLevel: node.requiredLevel,
+          reqDescription: node.reqDescription,
           keywords: node.keywords,
           x: node.x - bounds.x,
           y: node.y - bounds.y,
@@ -416,7 +415,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 py-4">
+        <div className="flex flex-col gap-4 py-4 [&_*]:select-text">
           {errors.length > 0 ? (
             <div className="flex flex-col gap-1 p-3 bg-destructive/10 border border-destructive rounded-md">
               <p className="text-sm font-medium text-destructive mb-2">

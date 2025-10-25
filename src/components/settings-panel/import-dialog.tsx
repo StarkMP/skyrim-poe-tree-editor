@@ -20,7 +20,7 @@ type ImportDialogProps = {
 };
 
 export const ImportDialog = ({ open, onOpenChange }: ImportDialogProps) => {
-  const gamePerks = useStore((state) => state.gamePerks);
+  const gamePerkIdsSet = useStore((state) => state.gamePerkIdsSet);
   const importData = useStore((state) => state.importData);
 
   const [file, setFile] = useState<File | null>(null);
@@ -66,11 +66,10 @@ export const ImportDialog = ({ open, onOpenChange }: ImportDialogProps) => {
       }
 
       // Validate perks
-      const gamePerkIds = new Set(gamePerks.map((p) => p.id));
       const missingPerks: string[] = [];
 
       for (const [nodeId, node] of Object.entries(data.nodes)) {
-        if (node.perkId && !gamePerkIds.has(node.perkId)) {
+        if (node.perkId && !gamePerkIdsSet.has(node.perkId)) {
           missingPerks.push(`Нода ${nodeId.slice(0, 8)}: перк "${node.perkId}" не найден`);
         }
       }
@@ -141,7 +140,7 @@ export const ImportDialog = ({ open, onOpenChange }: ImportDialogProps) => {
           </div>
 
           {errors.length > 0 ? (
-            <div className="flex flex-col gap-1 p-3 bg-destructive/10 border border-destructive rounded-md">
+            <div className="flex flex-col gap-1 p-3 bg-destructive/10 border border-destructive rounded-md [&_*]:select-text">
               {errors.map((error, index) => (
                 <p key={index} className="text-xs text-destructive">
                   {error}

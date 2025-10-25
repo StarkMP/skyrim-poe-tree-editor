@@ -1,8 +1,10 @@
-export type GamePerksData = {
-  id: string;
+export type GamePerk = {
   name: string;
   description: string;
-  requiredLevel: number | null;
+};
+
+export type GamePerksData = {
+  [id: string]: GamePerk;
 };
 
 export const enum NodeType {
@@ -15,11 +17,11 @@ type NodeUID = string;
 
 export type EditorNode = {
   type: NodeType;
-  perkId: GamePerksData['id'];
+  perkId: string;
   iconUrl: string;
-  title: GamePerksData['name'];
-  description: GamePerksData['description'];
-  requiredLevel: GamePerksData['requiredLevel'];
+  title: string;
+  description: string;
+  reqDescription: string;
   keywords: string[];
   x: number;
   y: number;
@@ -80,10 +82,10 @@ export type EditorData = {
 
 export type ExportNode = {
   type: NodeType;
-  perkId: GamePerksData['id'];
-  title: GamePerksData['name'];
-  description: GamePerksData['description'];
-  requiredLevel: GamePerksData['requiredLevel'];
+  perkId: string;
+  title: string;
+  description: string;
+  reqDescription: string;
   keywords: string[];
   x: number;
   y: number;

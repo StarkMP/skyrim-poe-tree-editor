@@ -125,6 +125,7 @@ export const SettingsPanel = () => {
                 <Badge variant="secondary">{gridSettings.rotation}°</Badge>
               </div>
               <Slider
+                className="mb-2"
                 id="grid-rotation"
                 value={[gridSettings.rotation]}
                 onValueChange={(value) => updateGridSettings({ rotation: value[0] })}
@@ -136,23 +137,29 @@ export const SettingsPanel = () => {
           </div>
         </PanelSection>
 
-        <ScrollArea className="flex-1">
-          {selectedNode && selectedElement ? (
-            <NodeSettings nodeId={selectedElement.id} node={selectedNode} />
-          ) : selectedImage && selectedElement ? (
-            <ImageSettings imageId={selectedElement.id} image={selectedImage} />
-          ) : selectedOrbit && selectedElement ? (
-            <OrbitSettings orbitId={selectedElement.id} orbit={selectedOrbit} />
-          ) : selectedConnection && selectedElement ? (
-            <ConnectionSettings connectionId={selectedElement.id} connection={selectedConnection} />
-          ) : (
-            <PanelSection>
-              <span className="text-center text-xs opacity-50">
-                Выделите элемент для редактирования или нажмите ПКМ по viewport для создания нового
-              </span>
-            </PanelSection>
-          )}
-        </ScrollArea>
+        <div className="flex-1 relative overflow-y-auto size-full">
+          <div className="absolute left-0 top-0 size-full">
+            {selectedNode && selectedElement ? (
+              <NodeSettings nodeId={selectedElement.id} node={selectedNode} />
+            ) : selectedImage && selectedElement ? (
+              <ImageSettings imageId={selectedElement.id} image={selectedImage} />
+            ) : selectedOrbit && selectedElement ? (
+              <OrbitSettings orbitId={selectedElement.id} orbit={selectedOrbit} />
+            ) : selectedConnection && selectedElement ? (
+              <ConnectionSettings
+                connectionId={selectedElement.id}
+                connection={selectedConnection}
+              />
+            ) : (
+              <PanelSection>
+                <span className="text-center text-xs opacity-50">
+                  Выделите элемент для редактирования или нажмите ПКМ по viewport для создания
+                  нового
+                </span>
+              </PanelSection>
+            )}
+          </div>
+        </div>
       </div>
 
       <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} />

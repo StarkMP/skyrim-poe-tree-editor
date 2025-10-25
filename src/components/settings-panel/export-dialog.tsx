@@ -1,3 +1,4 @@
+import JSZip from 'jszip';
 import { useState } from 'react';
 
 import largeNodeBorder from '@/assets/large-node-border.png';
@@ -16,6 +17,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useStore } from '@/store';
 import { ExportData, ExportNode, NodeType } from '@/types';
 import { getNodeRadius } from '@/utils/node-helpers';
+import { AtlasNode, loadImage, packTextureAtlas } from '@/utils/texture-atlas';
 
 // Border images for each node type
 const nodeBorderImages: Record<NodeType, string> = {
@@ -31,9 +33,7 @@ type ExportDialogProps = {
 
 type ExportResult = {
   editorDataUrl: string;
-  gameDataUrl: string;
-  nodeIconsUrl: string;
-  backgroundUrl: string;
+  gameFilesZipUrl: string;
 };
 
 export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
@@ -127,61 +127,39 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     };
   };
 
-  const loadImage = (url: string): Promise<HTMLImageElement> =>
-    new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
-    });
+  const generateTextureAtlas = async (): Promise<{
+    blob: Blob;
+    rects: Map<string, { x: number; y: number; width: number; height: number }>;
+  }> => {
+    // Подготавливаем данные для атласа
+    const atlasNodes: AtlasNode[] = [];
 
-  const generateNodeIconsImage = async (bounds: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }): Promise<Blob> => {
-    const canvas = document.createElement('canvas');
-    canvas.width = bounds.width;
-    canvas.height = bounds.height;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Failed to get canvas context');
-
-    // Load all node icons and borders
-    for (const node of Object.values(nodes)) {
+    for (const [uid, node] of Object.entries(nodes)) {
       if (!node.iconUrl) continue;
 
       try {
-        const radius = getNodeRadius(node.type);
-        const x = node.x - bounds.x;
-        const y = node.y - bounds.y;
+        // Загружаем иконку и бордер для каждой ноды
+        const iconImage = await loadImage(node.iconUrl);
+        const borderImage = await loadImage(nodeBorderImages[node.type]);
 
-        // Border size slightly larger than node
-        const borderScale = 1.15;
-        const borderSize = radius * 2 * borderScale;
-
-        // Load and draw circular clipped icon first
-        const img = await loadImage(node.iconUrl);
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.clip();
-        ctx.drawImage(img, x - radius, y - radius, radius * 2, radius * 2);
-        ctx.restore();
-
-        // Load and draw border on top of the icon
-        const borderImg = await loadImage(nodeBorderImages[node.type]);
-        ctx.drawImage(borderImg, x - borderSize / 2, y - borderSize / 2, borderSize, borderSize);
+        atlasNodes.push({
+          uid,
+          type: node.type,
+          iconUrl: node.iconUrl,
+          iconImage,
+          borderImage,
+        });
       } catch (error) {
-        console.error(`Failed to load icon for node: ${node.iconUrl}`, error);
+        console.error(`Failed to load images for node ${uid}: ${node.iconUrl}`, error);
       }
     }
 
-    return new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((blob) => {
+    // Упаковываем ноды в атлас
+    const atlasResult = packTextureAtlas(atlasNodes, 4);
+
+    // Конвертируем canvas в blob
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      atlasResult.canvas.toBlob((blob) => {
         if (blob) {
           resolve(blob);
         } else {
@@ -189,64 +167,111 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         }
       }, 'image/png');
     });
+
+    return {
+      blob,
+      rects: atlasResult.rects,
+    };
   };
 
-  const generateBackgroundImage = async (bounds: {
+  const generateBackgroundImages = async (bounds: {
     x: number;
     y: number;
     width: number;
     height: number;
-  }): Promise<Blob> => {
-    const canvas = document.createElement('canvas');
-    canvas.width = bounds.width;
-    canvas.height = bounds.height;
+  }): Promise<
+    Array<{
+      blob: Blob;
+      filename: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rotation?: number;
+    }>
+  > => {
+    const backgroundImages: Array<{
+      blob: Blob;
+      filename: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      rotation?: number;
+    }> = [];
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Failed to get canvas context');
-
-    // Load all background images
+    let index = 0;
     for (const image of Object.values(images)) {
       if (!image.imageUrl) continue;
 
       try {
         const img = await loadImage(image.imageUrl);
-        const x = image.x - bounds.x;
-        const y = image.y - bounds.y;
 
-        // Apply opacity (default 1)
+        // Create a canvas for this individual image
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Failed to get canvas context');
+
+        // Apply opacity to the canvas context - it will be "baked" into the PNG
         ctx.globalAlpha = image.opacity ?? 1;
 
-        // Apply rotation (default 0)
-        const rotation = image.rotation ?? 0;
-        if (rotation === 0) {
-          ctx.drawImage(img, x, y, image.width, image.height);
-        } else {
-          ctx.save();
-          // Move to center of image
-          ctx.translate(x + image.width / 2, y + image.height / 2);
-          // Rotate (convert degrees to radians)
-          ctx.rotate((rotation * Math.PI) / 180);
-          // Draw image centered at origin
-          ctx.drawImage(img, -image.width / 2, -image.height / 2, image.width, image.height);
-          ctx.restore();
-        }
+        // Draw image with applied opacity
+        // Rotation will be applied in the game interface
+        ctx.drawImage(img, 0, 0, image.width, image.height);
 
-        // Reset globalAlpha
-        ctx.globalAlpha = 1;
+        // Convert canvas to blob
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to generate blob from canvas'));
+            }
+          }, 'image/png');
+        });
+
+        backgroundImages.push({
+          blob,
+          filename: `background-${index}.png`,
+          x: image.x - bounds.x,
+          y: image.y - bounds.y,
+          width: image.width,
+          height: image.height,
+          rotation: image.rotation,
+        });
+
+        index++;
       } catch (error) {
         console.error(`Failed to load background image: ${image.imageUrl}`, error);
       }
     }
 
-    return new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(blob);
-        } else {
-          reject(new Error('Failed to generate blob from canvas'));
-        }
-      }, 'image/png');
-    });
+    return backgroundImages;
+  };
+
+  const createGameFilesZip = async (
+    gameDataBlob: Blob,
+    textureAtlasBlob: Blob,
+    backgroundImages: Array<{ blob: Blob; filename: string }>
+  ): Promise<Blob> => {
+    const zip = new JSZip();
+
+    // Add game-data.json
+    zip.file('game-data.json', gameDataBlob);
+
+    // Add node-icons.png
+    zip.file('node-icons.png', textureAtlasBlob);
+
+    // Add all background images
+    for (const bgImage of backgroundImages) {
+      zip.file(bgImage.filename, bgImage.blob);
+    }
+
+    // Generate the zip file
+    return await zip.generateAsync({ type: 'blob' });
   };
 
   const handleExport = async () => {
@@ -266,6 +291,12 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       // Calculate bounds
       const bounds = calculateBounds();
 
+      // Generate texture atlas
+      const { blob: textureAtlasBlob, rects: textureRects } = await generateTextureAtlas();
+
+      // Generate background images
+      const backgroundImages = await generateBackgroundImages(bounds);
+
       // Generate editor-data.json
       const editorData = {
         nodes,
@@ -281,9 +312,15 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       });
       const editorDataUrl = URL.createObjectURL(editorDataBlob);
 
-      // Generate game-data.json
+      // Generate game-data.json with texture coordinates and background images
       const exportNodes: { [uid: string]: ExportNode } = {};
       for (const [uid, node] of Object.entries(nodes)) {
+        const textureRect = textureRects.get(uid);
+        if (!textureRect) {
+          console.warn(`No texture rect found for node ${uid}`);
+          continue;
+        }
+
         exportNodes[uid] = {
           type: node.type,
           perkId: node.perkId,
@@ -293,6 +330,12 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
           keywords: node.keywords,
           x: node.x - bounds.x,
           y: node.y - bounds.y,
+          texture: {
+            x: textureRect.x,
+            y: textureRect.y,
+            width: textureRect.width,
+            height: textureRect.height,
+          },
         };
       }
 
@@ -301,25 +344,31 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         height: bounds.height,
         nodes: exportNodes,
         connections,
+        backgroundImages: backgroundImages.map((bg) => ({
+          filename: bg.filename,
+          x: bg.x,
+          y: bg.y,
+          width: bg.width,
+          height: bg.height,
+          rotation: bg.rotation,
+        })),
       };
+
       const gameDataBlob = new Blob([JSON.stringify(gameData, null, 2)], {
         type: 'application/json',
       });
-      const gameDataUrl = URL.createObjectURL(gameDataBlob);
 
-      // Generate node-icons.png
-      const nodeIconsBlob = await generateNodeIconsImage(bounds);
-      const nodeIconsUrl = URL.createObjectURL(nodeIconsBlob);
-
-      // Generate background.png
-      const backgroundBlob = await generateBackgroundImage(bounds);
-      const backgroundUrl = URL.createObjectURL(backgroundBlob);
+      // Create ZIP archive with game files
+      const gameFilesZipBlob = await createGameFilesZip(
+        gameDataBlob,
+        textureAtlasBlob,
+        backgroundImages
+      );
+      const gameFilesZipUrl = URL.createObjectURL(gameFilesZipBlob);
 
       setExportResult({
         editorDataUrl,
-        gameDataUrl,
-        nodeIconsUrl,
-        backgroundUrl,
+        gameFilesZipUrl,
       });
     } catch (error) {
       console.error('Export error:', error);
@@ -333,9 +382,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     // Revoke URLs to free memory
     if (exportResult) {
       URL.revokeObjectURL(exportResult.editorDataUrl);
-      URL.revokeObjectURL(exportResult.gameDataUrl);
-      URL.revokeObjectURL(exportResult.nodeIconsUrl);
-      URL.revokeObjectURL(exportResult.backgroundUrl);
+      URL.revokeObjectURL(exportResult.gameFilesZipUrl);
     }
 
     setErrors([]);
@@ -348,9 +395,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       // Revoke URLs to free memory
       if (exportResult) {
         URL.revokeObjectURL(exportResult.editorDataUrl);
-        URL.revokeObjectURL(exportResult.gameDataUrl);
-        URL.revokeObjectURL(exportResult.nodeIconsUrl);
-        URL.revokeObjectURL(exportResult.backgroundUrl);
+        URL.revokeObjectURL(exportResult.gameFilesZipUrl);
       }
 
       // Reset state when closing
@@ -408,25 +453,11 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
               <div className="flex flex-col gap-2">
                 <span className="text-md font-medium">Для игры:</span>
                 <a
-                  href={exportResult.gameDataUrl}
-                  download="game-data.json"
+                  href={exportResult.gameFilesZipUrl}
+                  download="game-files.zip"
                   className="text-sm text-primary hover:underline"
                 >
-                  📄 game-data.json
-                </a>
-                <a
-                  href={exportResult.nodeIconsUrl}
-                  download="node-icons.png"
-                  className="text-sm text-primary hover:underline"
-                >
-                  🖼️ node-icons.png
-                </a>
-                <a
-                  href={exportResult.backgroundUrl}
-                  download="background.png"
-                  className="text-sm text-primary hover:underline"
-                >
-                  🖼️ background.png
+                  📦 game-files.zip
                 </a>
               </div>
             </div>

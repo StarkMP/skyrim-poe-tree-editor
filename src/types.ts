@@ -87,6 +87,12 @@ export type ExportNode = {
   keywords: string[];
   x: number;
   y: number;
+  texture: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 };
 
 export type ExportNodes = { [uid: NodeUID]: ExportNode };
@@ -96,6 +102,14 @@ export type ExportData = {
   height: number;
   nodes: ExportNodes;
   connections: EditorConnections;
+  backgroundImages: Array<{
+    filename: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation?: number;
+  }>;
 };
 
 export type ImportData = EditorData;

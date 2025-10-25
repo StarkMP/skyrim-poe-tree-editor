@@ -91,6 +91,7 @@ export type Store = {
 
   // Viewport
   requestCenterOnElement: (id: string, type: 'node' | 'image' | 'orbit') => void;
+  clearCenterRequest: () => void;
   updateViewport: (viewport: ViewportState) => void;
 
   // Grid settings
@@ -488,6 +489,10 @@ export const useStore = create<Store>((set, get) => {
       set({
         viewportCenterRequest: { id, type, timestamp: Date.now() },
       });
+    },
+
+    clearCenterRequest: () => {
+      set({ viewportCenterRequest: null });
     },
 
     updateViewport: (viewport: ViewportState) => {

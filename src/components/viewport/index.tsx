@@ -59,9 +59,9 @@ export const Viewport = () => {
     deleteImage,
     deleteOrbit,
     addConnection,
-    removeConnection,
     removeAllConnections,
     updateViewport,
+    clearCenterRequest,
   } = useStore();
 
   // Apply saved viewport state
@@ -103,7 +103,10 @@ export const Viewport = () => {
 
     stage.position({ x: newX, y: newY });
     stage.batchDraw();
-  }, [viewportCenterRequest, nodes, images, orbits, stageSize]);
+
+    // Clear the request after execution to prevent re-triggering
+    clearCenterRequest();
+  }, [viewportCenterRequest?.timestamp, nodes, images, orbits, stageSize, clearCenterRequest]);
 
   // Set initial size and handle resize
   useEffect(() => {

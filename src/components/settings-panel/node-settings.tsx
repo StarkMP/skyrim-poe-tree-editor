@@ -236,6 +236,7 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
               emptyText="Перк не найден"
               className="h-8 text-xs"
               height="300px"
+              popoverWidth="600px"
             />
           </div>
 

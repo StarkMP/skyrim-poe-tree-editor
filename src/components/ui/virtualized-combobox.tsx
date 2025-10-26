@@ -31,6 +31,7 @@ type VirtualizedComboboxProps = {
   className?: string;
   disabled?: boolean;
   height?: string;
+  popoverWidth?: string;
 };
 
 export const VirtualizedCombobox = ({
@@ -43,6 +44,7 @@ export const VirtualizedCombobox = ({
   className,
   disabled = false,
   height = '300px',
+  popoverWidth = 'var(--radix-popover-trigger-width)',
 }: VirtualizedComboboxProps) => {
   const [open, setOpen] = React.useState(false);
   const [filteredOptions, setFilteredOptions] = React.useState<ComboboxOption[]>(options);
@@ -191,7 +193,7 @@ export const VirtualizedCombobox = ({
             </TooltipContent>
           ) : null}
         </Tooltip>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+        <PopoverContent className="p-0" style={{ width: popoverWidth }}>
           <Command shouldFilter={false} onKeyDown={handleKeyDown}>
             <CommandInput onValueChange={handleSearch} placeholder={searchPlaceholder} />
             <CommandList

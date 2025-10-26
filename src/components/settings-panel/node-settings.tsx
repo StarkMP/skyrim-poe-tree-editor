@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ComboboxOption } from '@/components/ui/combobox';
@@ -12,10 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { VirtualizedCombobox } from '@/components/ui/virtualized-combobox';
+import { NODE_RADIUS_LARGE, NODE_RADIUS_MASTER, NODE_RADIUS_SMALL } from '@/constants';
 import { useStore } from '@/store';
 import { EditorNode, NodeType } from '@/types';
+import { uploadIconToS3 } from '@/utils/s3-upload';
 
 type NodeSettingsProps = {
   nodeId: string;
@@ -27,8 +30,11 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
   const updateNode = useStore((state) => state.updateNode);
   const gamePerks = useStore((state) => state.gamePerks);
 
-  const [iconUrlInput, setIconUrlInput] = useState(node.iconUrl);
-  const [iconUrlError, setIconUrlError] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [keywordsInput, setKeywordsInput] = useState(node.keywords.join(', '));
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Memoize perk options to avoid recreating on every render
   const perkOptions = useMemo<ComboboxOption[]>(
@@ -43,12 +49,33 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
 
   // Update input when node changes
   useEffect(() => {
-    setIconUrlInput(node.iconUrl);
-    setIconUrlError('');
-  }, [nodeId, node.iconUrl]);
+    setSelectedFile(null);
+    setUploadError('');
+    setKeywordsInput(node.keywords.join(', '));
+  }, [nodeId]);
 
   const handleTypeChange = (value: string) => {
-    updateNode(nodeId, { type: Number.parseInt(value) as NodeType });
+    const newType = Number.parseInt(value) as NodeType;
+    // Reset icon when changing node type
+    updateNode(nodeId, { type: newType, iconUrl: '' });
+  };
+
+  // Get required icon size based on node type
+  const getRequiredIconSize = (nodeType: NodeType): number => {
+    switch (nodeType) {
+      case NodeType.SmallNode: {
+        return NODE_RADIUS_SMALL * 2;
+      }
+      case NodeType.LargeNode: {
+        return NODE_RADIUS_LARGE * 2;
+      }
+      case NodeType.MasterNode: {
+        return NODE_RADIUS_MASTER * 2;
+      }
+      default: {
+        return NODE_RADIUS_SMALL * 2;
+      }
+    }
   };
 
   const handlePerkChange = (perkId: string) => {
@@ -72,10 +99,14 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
   };
 
   const handleKeywordsChange = (value: string) => {
+    setKeywordsInput(value);
+
+    // Разбиваем по запятым и/или новым строкам
     const keywords = value
-      .split('\n')
+      .split(/[,\n]+/)
       .map((k) => k.trim())
       .filter((k) => k.length > 0);
+
     updateNode(nodeId, { keywords });
   };
 
@@ -93,31 +124,40 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
     }
   };
 
-  const validateAndApplyIconUrl = () => {
-    const url = iconUrlInput.trim();
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setUploadError('');
+    }
+  };
 
-    if (!url) {
-      setIconUrlError('URL не может быть пустым');
+  const handleUploadIcon = async () => {
+    if (!selectedFile) {
+      setUploadError('Выберите файл для загрузки');
       return;
     }
+
+    setIsUploading(true);
+    setUploadError('');
 
     try {
-      new URL(url);
-    } catch {
-      setIconUrlError('Некорректный URL');
-      return;
+      const requiredSize = getRequiredIconSize(node.type);
+      const iconUrl = await uploadIconToS3(selectedFile, {
+        requiredWidth: requiredSize,
+        requiredHeight: requiredSize,
+      });
+      updateNode(nodeId, { iconUrl });
+      setSelectedFile(null);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Ошибка при загрузке файла');
+    } finally {
+      setIsUploading(false);
     }
-
-    const validExtensions = ['.png', '.jpg', '.jpeg'];
-    const hasValidExtension = validExtensions.some((ext) => url.toLowerCase().endsWith(ext));
-
-    if (!hasValidExtension) {
-      setIconUrlError('URL должен указывать на изображение (.png, .jpg, .jpeg)');
-      return;
-    }
-
-    setIconUrlError('');
-    updateNode(nodeId, { iconUrl: url });
   };
 
   return (
@@ -230,32 +270,63 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
             />
           </div>
 
-          {/* Icon URL */}
+          {/* Icon Upload */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="node-icon" className="text-xs">
-              Ссылка на иконку
+              Иконка (требуется {getRequiredIconSize(node.type)}x{getRequiredIconSize(node.type)}px)
             </Label>
+            {/* Current icon preview */}
+            {node.iconUrl && node.iconUrl.length > 0 ? (
+              <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                <img
+                  src={node.iconUrl}
+                  alt="Current icon"
+                  className="w-8 h-8 object-contain rounded"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <span className="text-xs text-muted-foreground truncate flex-1">
+                  Текущая иконка загружена
+                </span>
+              </div>
+            ) : null}
+            {/* File input */}
             <div className="flex gap-2">
-              <Input
-                id="node-icon"
-                value={iconUrlInput}
-                onChange={(e) => {
-                  setIconUrlInput(e.target.value);
-                  setIconUrlError('');
-                }}
-                className="h-8 text-xs flex-1"
-                placeholder="https://example.com/icon.png"
-              />
+              <div className="flex-1">
+                <Input
+                  ref={fileInputRef}
+                  id="node-icon"
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg"
+                  onChange={handleFileSelect}
+                  disabled={isUploading}
+                  className="h-8 text-xs cursor-pointer"
+                />
+                {selectedFile ? (
+                  <span className="text-xs text-muted-foreground mt-1 block">
+                    {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  </span>
+                ) : null}
+              </div>
               <Button
                 size="sm"
                 variant="secondary"
-                onClick={validateAndApplyIconUrl}
-                className="h-8 text-xs"
+                onClick={handleUploadIcon}
+                disabled={!selectedFile || isUploading}
+                className="h-8 text-xs min-w-[100px]"
               >
-                Применить
+                {isUploading ? (
+                  <>
+                    <Spinner className="w-3 h-3 mr-1" />
+                    Загрузка...
+                  </>
+                ) : (
+                  'Загрузить'
+                )}
               </Button>
             </div>
-            {iconUrlError ? <span className="text-xs text-destructive">{iconUrlError}</span> : null}
+            {uploadError ? <span className="text-xs text-destructive">{uploadError}</span> : null}
           </div>
 
           {/* Keywords */}
@@ -265,10 +336,10 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
             </Label>
             <Textarea
               id="node-keywords"
-              value={node.keywords.join('\n')}
+              value={keywordsInput}
               onChange={(e) => handleKeywordsChange(e.target.value)}
               className="text-xs min-h-[60px]"
-              placeholder="Одно ключевое слово на строку"
+              placeholder="Ключевые слова через запятую"
             />
           </div>
         </div>

@@ -132,9 +132,16 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
     }
   };
 
+  const s3SecretKey = useStore((state) => state.s3SecretKey);
+
   const handleUploadIcon = async () => {
     if (!selectedFile) {
       setUploadError('Выберите файл для загрузки');
+      return;
+    }
+
+    if (!s3SecretKey) {
+      setUploadError('Ключ доступа S3 не настроен');
       return;
     }
 
@@ -143,7 +150,7 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
 
     try {
       const requiredSize = getRequiredIconSize(node.type);
-      const iconUrl = await uploadIconToS3(selectedFile, {
+      const iconUrl = await uploadIconToS3(selectedFile, s3SecretKey, {
         requiredWidth: requiredSize,
         requiredHeight: requiredSize,
       });
@@ -282,6 +289,7 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
                   src={node.iconUrl}
                   alt="Current icon"
                   className="w-8 h-8 object-contain rounded"
+                  crossOrigin="anonymous"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}

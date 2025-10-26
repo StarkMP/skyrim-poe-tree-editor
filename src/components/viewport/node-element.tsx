@@ -76,10 +76,19 @@ export const NodeElement = ({
     // Draw image
     ctx.drawImage(image, 0, 0, size, size);
 
-    // Convert to image element
-    const img = new window.Image();
-    img.src = canvas.toDataURL();
-    img.onload = () => setImageElement(img);
+    // Convert to image element using toBlob (more efficient)
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+
+      const img = new window.Image();
+      const url = URL.createObjectURL(blob);
+      img.src = url;
+      img.onload = () => {
+        setImageElement(img);
+        // Clean up the object URL after image is loaded
+        URL.revokeObjectURL(url);
+      };
+    });
   }, [image, radius]);
 
   const handleDragMove = (e: KonvaEventObject<DragEvent>) => {

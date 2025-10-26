@@ -1,7 +1,8 @@
 /* eslint-disable unicorn/no-nested-ternary */
-import { ArrowUp, Download, Trash2 } from 'lucide-react';
+import { ArrowUp, Download, Key, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
+import { S3CredentialsModal } from '@/components/s3-credentials-modal';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,7 +13,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { PanelSection } from '@/components/ui/panel-section';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useStore } from '@/store';
 
 import { Badge } from '../ui/badge';
@@ -36,11 +36,14 @@ export const SettingsPanel = () => {
     gridSettings,
     updateGridSettings,
     clearAll,
+    setS3SecretKey,
+    clearS3SecretKey,
   } = useStore();
 
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const [s3KeyDialogOpen, setS3KeyDialogOpen] = useState(false);
 
   const selectedNode = selectedElement?.type === 'node' ? nodes[selectedElement.id] : null;
   const selectedImage = selectedElement?.type === 'image' ? images[selectedElement.id] : null;
@@ -53,6 +56,20 @@ export const SettingsPanel = () => {
   const handleClear = () => {
     clearAll();
     setClearDialogOpen(false);
+  };
+
+  const handleChangeS3Key = () => {
+    setS3KeyDialogOpen(true);
+  };
+
+  const handleS3KeySuccess = (secretKey: string) => {
+    setS3SecretKey(secretKey);
+    setS3KeyDialogOpen(false);
+  };
+
+  const handleS3KeyDialogClose = () => {
+    // Allow closing this dialog (unlike the initial one in App.tsx)
+    setS3KeyDialogOpen(false);
   };
 
   return (
@@ -87,6 +104,15 @@ export const SettingsPanel = () => {
 
         <PanelSection title="Глобальные настройки">
           <div className="flex flex-col gap-4 w-full">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleChangeS3Key}
+              className="w-full text-xs"
+            >
+              <Key className="w-3 h-3" /> Изменить ключ S3
+            </Button>
+
             <div className="flex w-full items-center justify-between">
               <Label htmlFor="positioning-grid" className="text-xs">
                 Сетка позиционирования
@@ -164,6 +190,9 @@ export const SettingsPanel = () => {
 
       <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} />
       <ExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
+
+      {/* S3 Key change dialog */}
+      <S3CredentialsModal open={s3KeyDialogOpen} onSuccess={handleS3KeySuccess} allowClose={true} />
 
       {/* Clear confirmation dialog */}
       <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>

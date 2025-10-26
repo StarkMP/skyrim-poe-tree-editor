@@ -78,9 +78,16 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
     }
   };
 
+  const s3SecretKey = useStore((state) => state.s3SecretKey);
+
   const handleUploadImage = async () => {
     if (!selectedFile) {
       setUploadError('Выберите файл для загрузки');
+      return;
+    }
+
+    if (!s3SecretKey) {
+      setUploadError('Ключ доступа S3 не настроен');
       return;
     }
 
@@ -88,7 +95,7 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
     setUploadError('');
 
     try {
-      const imageUrl = await uploadIconToS3(selectedFile, {
+      const imageUrl = await uploadIconToS3(selectedFile, s3SecretKey, {
         maxWidth: 2000,
         maxHeight: 2000,
       });
@@ -121,6 +128,7 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
                   src={image.imageUrl}
                   alt="Current background"
                   className="w-12 h-12 object-contain rounded"
+                  crossOrigin="anonymous"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}

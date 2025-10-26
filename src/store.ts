@@ -18,6 +18,7 @@ import {
   PositionOrbit,
   ViewportState,
 } from './types';
+import { getSecretKey } from './utils/s3-credentials';
 
 const STORAGE_KEY = 'skyrim-poe-tree-editor-data';
 const MAX_UNDO_STACK_SIZE = 50;
@@ -62,6 +63,10 @@ export type Store = {
   viewport: ViewportState;
   gridSettings: GridSettings;
 
+  // S3 credentials
+  s3SecretKey: string | null;
+  isS3KeyValid: boolean;
+
   // Undo stack
   undoStack: UndoAction[];
 
@@ -97,6 +102,11 @@ export type Store = {
 
   // Grid settings
   updateGridSettings: (settings: Partial<GridSettings>) => void;
+
+  // S3 credentials
+  setS3SecretKey: (key: string) => void;
+  clearS3SecretKey: () => void;
+  getS3SecretKey: () => string | null;
 
   // Undo operation
   undo: () => void;
@@ -192,6 +202,7 @@ const loadInitialData = () => {
 export const useStore = create<Store>((set, get) => {
   const initialData = loadInitialData();
   const gamePerks = gamePerksData as GamePerksData;
+  const storedSecretKey = getSecretKey();
 
   return {
     // Initial state
@@ -205,6 +216,8 @@ export const useStore = create<Store>((set, get) => {
     viewportCenterRequest: null,
     viewport: initialData.viewport,
     gridSettings: initialData.gridSettings,
+    s3SecretKey: storedSecretKey,
+    isS3KeyValid: !!storedSecretKey,
     undoStack: [],
 
     // Node operations
@@ -510,6 +523,17 @@ export const useStore = create<Store>((set, get) => {
       }));
       get().saveToLocalStorage();
     },
+
+    // S3 credentials
+    setS3SecretKey: (key: string) => {
+      set({ s3SecretKey: key, isS3KeyValid: true });
+    },
+
+    clearS3SecretKey: () => {
+      set({ s3SecretKey: null, isS3KeyValid: false });
+    },
+
+    getS3SecretKey: () => get().s3SecretKey,
 
     // Undo operation
     undo: () => {

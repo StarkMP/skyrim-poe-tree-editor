@@ -1,21 +1,10 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { nanoid } from 'nanoid';
 
-// Cloudflare R2 configuration (S3-compatible)
-const S3_CONFIG = {
-  endpoint: 'https://30a1374c1863d815172af49eb75d9fa2.r2.cloudflarestorage.com',
-  region: 'auto',
-  credentials: {
-    accessKeyId: '48aa7cecd14bdce3093236383ae08b52',
-    secretAccessKey: '4e994c635e41040a72b4373467bc1cb5eb28091a4aa9b2980b180b45737cca27',
-  },
-};
+import { createS3Client } from './s3-credentials';
 
 const BUCKET_NAME = 'stb-poe-editor';
 const PUBLIC_URL_BASE = 'https://data.poe-tree-editor.skytb.ru';
-
-// Initialize S3 client
-const s3Client = new S3Client(S3_CONFIG);
 
 /**
  * Validates image dimensions
@@ -98,12 +87,14 @@ async function validateImageDimensions(
 /**
  * Uploads an icon file to S3 storage
  * @param file - The image file to upload
+ * @param secretKey - The S3 secret access key
  * @param options - Optional validation options for image dimensions
  * @returns Promise with the public URL of the uploaded file
  * @throws Error if upload fails
  */
 export async function uploadIconToS3(
   file: File,
+  secretKey: string,
   options?: {
     requiredWidth?: number;
     requiredHeight?: number;
@@ -134,6 +125,9 @@ export async function uploadIconToS3(
   const filename = `${uniqueId}.${extension}`;
 
   try {
+    // Create S3 client with the provided secret key
+    const s3Client = createS3Client(secretKey);
+
     // Convert file to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
 

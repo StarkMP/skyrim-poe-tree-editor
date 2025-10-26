@@ -78,7 +78,6 @@ export function packTextureAtlas(
     const nodeSize = getNodeAtlasSize(type);
 
     let currentX = padding;
-    const rowStartY = currentY;
 
     // Размещаем ноды в текущей группе с переносом на новую строку
     for (const node of groupNodes) {

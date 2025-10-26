@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PanelSection } from '@/components/ui/panel-section';
+import { Slider } from '@/components/ui/slider';
 import { Spinner } from '@/components/ui/spinner';
 import { useStore } from '@/store';
 import { EditorImage } from '@/types';
@@ -30,27 +31,39 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
 
   const handleWidthChange = (value: string) => {
     const width = Number.parseInt(value);
-    if (!Number.isNaN(width) && width > 0) {
-      updateImage(imageId, { width });
-    }
+    const currentWidth = Math.min(width, 2000);
+
+    updateImage(imageId, { width: currentWidth ?? 0 });
   };
 
   const handleHeightChange = (value: string) => {
     const height = Number.parseInt(value);
-    if (!Number.isNaN(height) && height > 0) {
-      updateImage(imageId, { height });
+    const currentHeight = Math.min(height, 2000);
+
+    updateImage(imageId, { height: currentHeight ?? 0 });
+  };
+
+  const handleWidthBlur = () => {
+    if (Number.isNaN(image.width)) {
+      updateImage(imageId, { width: 0 });
     }
   };
 
-  const handleOpacityChange = (value: string) => {
-    const opacity = Number.parseFloat(value);
+  const handleHeightBlur = () => {
+    if (Number.isNaN(image.height)) {
+      updateImage(imageId, { height: 0 });
+    }
+  };
+
+  const handleOpacityChange = (value: number[]) => {
+    const opacity = value[0];
     if (!Number.isNaN(opacity) && opacity >= 0 && opacity <= 1) {
       updateImage(imageId, { opacity });
     }
   };
 
-  const handleRotationChange = (value: string) => {
-    const rotation = Number.parseFloat(value);
+  const handleRotationChange = (value: number[]) => {
+    const rotation = value[0];
     if (!Number.isNaN(rotation)) {
       updateImage(imageId, { rotation });
     }
@@ -217,6 +230,7 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
                 type="number"
                 value={image.width}
                 onChange={(e) => handleWidthChange(e.target.value)}
+                onBlur={handleWidthBlur}
                 className="h-8 text-xs"
                 min="1"
               />
@@ -232,6 +246,7 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
                 type="number"
                 value={image.height}
                 onChange={(e) => handleHeightChange(e.target.value)}
+                onBlur={handleHeightBlur}
                 className="h-8 text-xs"
                 min="1"
               />
@@ -240,33 +255,43 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
 
           {/* Opacity */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="image-opacity" className="text-xs">
-              Прозрачность (0-1)
-            </Label>
-            <Input
+            <div className="flex items-center justify-between">
+              <Label htmlFor="image-opacity" className="text-xs">
+                Прозрачность
+              </Label>
+              <span className="text-xs text-muted-foreground">
+                {((image.opacity ?? 1) * 100).toFixed(0)}%
+              </span>
+            </div>
+            <Slider
               id="image-opacity"
-              type="number"
-              value={image.opacity ?? 1}
-              onChange={(e) => handleOpacityChange(e.target.value)}
-              className="h-8 text-xs"
-              min="0"
-              max="1"
-              step="0.1"
+              value={[image.opacity ?? 1]}
+              onValueChange={handleOpacityChange}
+              min={0}
+              max={1}
+              step={0.01}
+              className="w-full my-2"
             />
           </div>
 
           {/* Rotation */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="image-rotation" className="text-xs">
-              Поворот (градусы)
-            </Label>
-            <Input
+            <div className="flex items-center justify-between">
+              <Label htmlFor="image-rotation" className="text-xs">
+                Поворот
+              </Label>
+              <span className="text-xs text-muted-foreground">
+                {(image.rotation ?? 0).toFixed(0)}°
+              </span>
+            </div>
+            <Slider
               id="image-rotation"
-              type="number"
-              value={image.rotation ?? 0}
-              onChange={(e) => handleRotationChange(e.target.value)}
-              className="h-8 text-xs"
-              step="1"
+              value={[image.rotation ?? 0]}
+              onValueChange={handleRotationChange}
+              min={0}
+              max={360}
+              step={1}
+              className="w-full my-2"
             />
           </div>
         </div>

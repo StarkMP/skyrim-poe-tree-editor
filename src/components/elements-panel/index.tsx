@@ -27,11 +27,17 @@ export const ElementsPanel = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  const elements: Array<{ id: string; type: 'node' | 'image' | 'orbit'; label: string }> = [
+  const elements: Array<{
+    id: string;
+    type: 'node' | 'image' | 'orbit';
+    label: string;
+    perkId?: string;
+  }> = [
     ...Object.entries(nodes).map(([id, node]) => ({
       id,
       type: 'node' as const,
       label: `${node.title || 'Нет имени'} (${id.slice(0, 8)})`,
+      perkId: node.perkId,
     })),
     ...Object.keys(images).map((id) => ({
       id,
@@ -45,9 +51,12 @@ export const ElementsPanel = () => {
     })),
   ];
 
-  const filteredElements = elements.filter((element) =>
-    element.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredElements = elements.filter((element) => {
+    const query = searchQuery.toLowerCase();
+    const matchesLabel = element.label.toLowerCase().includes(query);
+    const matchesPerkId = element.perkId?.toLowerCase().includes(query) ?? false;
+    return matchesLabel || matchesPerkId;
+  });
 
   const handleCenterOnElement = (id: string, type: 'node' | 'image' | 'orbit') => {
     selectElement(id, type);
@@ -72,7 +81,7 @@ export const ElementsPanel = () => {
         <div className="p-2">
           <Input
             type="text"
-            placeholder="Поиск по элементам..."
+            placeholder="Поиск по названию или perkId..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-8 text-xs"

@@ -165,23 +165,32 @@ export const VirtualizedCombobox = ({
   return (
     <TooltipProvider delayDuration={300}>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              'flex items-center justify-between truncate max-w-full px-3 active:!scale-[unset]',
-              className
-            )}
-            disabled={disabled}
-          >
-            <span className="truncate max-w-[220px]">
-              {selectedOption ? selectedOption.label : placeholder}
-            </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className={cn(
+                  'flex items-center justify-between truncate max-w-full px-3 active:!scale-[unset]',
+                  className
+                )}
+                disabled={disabled}
+              >
+                <span className="truncate max-w-[220px]">
+                  {selectedOption ? selectedOption.label : placeholder}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          {selectedOption ? (
+            <TooltipContent side="top">
+              <p>{selectedOption.label}</p>
+            </TooltipContent>
+          ) : null}
+        </Tooltip>
         <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
           <Command shouldFilter={false} onKeyDown={handleKeyDown}>
             <CommandInput onValueChange={handleSearch} placeholder={searchPlaceholder} />

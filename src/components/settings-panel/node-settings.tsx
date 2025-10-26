@@ -124,6 +124,10 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
     }
   };
 
+  const handleTitleChange = (value: string) => {
+    updateNode(nodeId, { title: value });
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -243,9 +247,9 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
             <Input
               id="node-title"
               value={node.title}
-              disabled
+              onChange={(e) => handleTitleChange(e.target.value)}
               className="h-8 text-xs"
-              placeholder="Выберите перк"
+              placeholder="Введите название или выберите перк"
             />
           </div>
 

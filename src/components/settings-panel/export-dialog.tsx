@@ -62,10 +62,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         nodeErrors.push(`перк "${node.perkId}" не существует`);
       }
 
-      if (!node.iconUrl) {
-        nodeErrors.push('не указана иконка');
-      }
-
       if (!node.title) {
         nodeErrors.push('не указано название');
       }
@@ -134,12 +130,12 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     const atlasNodes: AtlasNode[] = [];
 
     for (const [uid, node] of Object.entries(nodes)) {
-      if (!node.iconUrl) continue;
-
       try {
-        // Загружаем иконку и бордер для каждой ноды
-        const iconImage = await loadImage(node.iconUrl);
+        // Загружаем бордер для каждой ноды
         const borderImage = await loadImage(nodeBorderImages[node.type]);
+
+        // Если есть иконка - загружаем её, иначе null
+        const iconImage = node.iconUrl ? await loadImage(node.iconUrl) : null;
 
         atlasNodes.push({
           uid,
@@ -149,7 +145,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
           borderImage,
         });
       } catch (error) {
-        console.error(`Failed to load images for node ${uid}: ${node.iconUrl}`, error);
+        console.error(`Failed to load images for node ${uid}`, error);
       }
     }
 
@@ -316,7 +312,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       for (const [uid, node] of Object.entries(nodes)) {
         const textureRect = textureRects.get(uid);
         if (!textureRect) {
-          console.warn(`No texture rect found for node ${uid}`);
+          console.warn(`No texture rect found for node ${uid} - this should not happen`);
           continue;
         }
 

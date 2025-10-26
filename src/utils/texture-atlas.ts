@@ -5,8 +5,8 @@ import { getNodeRadius } from './node-helpers';
 export type AtlasNode = {
   uid: string;
   type: NodeType;
-  iconUrl: string;
-  iconImage: HTMLImageElement;
+  iconUrl?: string; // опционально - для нод без иконки
+  iconImage: HTMLImageElement | null; // null если нет иконки
   borderImage: HTMLImageElement;
 };
 
@@ -125,16 +125,18 @@ export function packTextureAtlas(
     const centerX = rect.x + rect.width / 2;
     const centerY = rect.y + rect.height / 2;
 
-    // Рисуем иконку с круглой маской
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(node.iconImage, centerX - radius, centerY - radius, radius * 2, radius * 2);
-    ctx.restore();
+    // Рисуем иконку с круглой маской (если есть иконка)
+    if (node.iconImage) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(node.iconImage, centerX - radius, centerY - radius, radius * 2, radius * 2);
+      ctx.restore();
+    }
 
-    // Рисуем бордер поверх иконки
+    // Рисуем бордер поверх иконки (или просто бордер, если иконки нет)
     ctx.drawImage(node.borderImage, rect.x, rect.y, rect.width, rect.height);
   }
 

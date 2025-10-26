@@ -18,7 +18,7 @@ type NodeUID = string;
 export type EditorNode = {
   type: NodeType;
   perkId: string;
-  iconUrl: string;
+  iconUrl?: string; // опционально - можно экспортировать без иконки
   title: string;
   description: string;
   reqDescription: string;

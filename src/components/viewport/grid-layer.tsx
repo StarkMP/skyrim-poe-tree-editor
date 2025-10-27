@@ -1,5 +1,6 @@
 import { Shape } from 'react-konva';
 
+import { GRID_DOT_COLOR, GRID_MIN_SCALE } from '@/constants';
 import { getGridRange, getVisibleRect } from '@/utils/grid-helpers';
 
 type GridLayerProps = {
@@ -10,9 +11,6 @@ type GridLayerProps = {
   stageSize: { width: number; height: number };
   scale: number;
 };
-
-// Минимальный масштаб, при котором отображается сетка
-const MIN_SCALE_FOR_GRID = 0.3;
 
 export const GridLayer = ({
   gridSize,
@@ -25,15 +23,17 @@ export const GridLayer = ({
   if (!enabled) return null;
 
   // Скрываем сетку при сильном отдалении
-  if (scale < MIN_SCALE_FOR_GRID) return null;
+  if (scale < GRID_MIN_SCALE) return null;
 
   // Вычисляем opacity в зависимости от масштаба для плавного исчезновения
-  const opacity = Math.min(1, (scale - MIN_SCALE_FOR_GRID) / (0.5 - MIN_SCALE_FOR_GRID));
+  const opacity = Math.min(1, (scale - GRID_MIN_SCALE) / (0.5 - GRID_MIN_SCALE));
 
   return (
     <Shape
       sceneFunc={(context, shape) => {
-        context.fillStyle = `rgba(255, 255, 255, ${0.2 * opacity})`;
+        // Extract opacity value from GRID_DOT_COLOR and multiply by calculated opacity
+        const baseOpacity = 0.2;
+        context.fillStyle = `rgba(255, 255, 255, ${baseOpacity * opacity})`;
 
         // Получаем видимую область в мировых координатах
         const visibleRect = getVisibleRect(stagePos, stageSize, scale);

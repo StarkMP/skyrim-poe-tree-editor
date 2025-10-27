@@ -3,7 +3,7 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 import { useEffect, useRef, useState } from 'react';
 import { Layer, Stage } from 'react-konva';
 
-import { MAX_ZOOM, MIN_ZOOM, ZOOM_SPEED } from '@/constants';
+import { MAX_ZOOM, MIN_ZOOM, VIEWPORT_BACKGROUND_COLOR, ZOOM_SPEED } from '@/constants';
 import { useStore } from '@/store';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
 
@@ -356,7 +356,11 @@ export const Viewport = () => {
   };
 
   return (
-    <div ref={containerRef} className="size-full bg-[#080B10]">
+    <div
+      ref={containerRef}
+      className="size-full"
+      style={{ backgroundColor: VIEWPORT_BACKGROUND_COLOR }}
+    >
       {stageSize.width > 0 && stageSize.height > 0 ? (
         <Stage
           ref={stageRef}

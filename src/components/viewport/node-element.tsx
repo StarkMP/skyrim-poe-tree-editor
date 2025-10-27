@@ -6,6 +6,7 @@ import useImage from 'use-image';
 import largeNodeBorder from '@/assets/large-node-border.png';
 import masterNodeBorder from '@/assets/master-node-border.png';
 import smallNodeBorder from '@/assets/small-node-border.png';
+import { SELECTION_COLOR } from '@/constants';
 import { useStore } from '@/store';
 import { EditorNode, NodeType } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
@@ -201,7 +202,7 @@ export const NodeElement = ({
       {isSelected ? (
         <Circle
           radius={radius}
-          stroke="#FFD700"
+          stroke={SELECTION_COLOR}
           strokeWidth={4}
           fill="transparent"
           listening={false}

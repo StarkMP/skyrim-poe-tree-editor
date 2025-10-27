@@ -2,6 +2,7 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 import { Group, Image, Rect } from 'react-konva';
 import useImage from 'use-image';
 
+import { IMAGE_BORDER_INACTIVE, SELECTION_COLOR } from '@/constants';
 import { useStore } from '@/store';
 import { EditorImage } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
@@ -79,8 +80,8 @@ export const BackgroundImage = ({
   const opacity = image.opacity ?? 1;
   const rotation = image.rotation ?? 0;
 
-  const inactiveBorder = imageElement ? undefined : '#404040';
-  const activeBorder = '#FFD700';
+  const inactiveBorder = imageElement ? undefined : IMAGE_BORDER_INACTIVE;
+  const activeBorder = SELECTION_COLOR;
 
   return (
     <Group

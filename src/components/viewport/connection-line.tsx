@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { Group, Line } from 'react-konva';
 
+import {
+  CONNECTION_BORDER_DEFAULT,
+  CONNECTION_BORDER_SELECTED,
+  CONNECTION_COLOR_DEFAULT,
+  CONNECTION_COLOR_HOVER,
+  CONNECTION_COLOR_SELECTED,
+} from '@/constants';
 import { EditorNode } from '@/types';
 
 type ConnectionLineProps = {
@@ -70,14 +77,14 @@ export const ConnectionLine = ({
 
   // Determine line color based on state
   const getLineColor = () => {
-    if (isSelected === true) return '#60a5fa'; // Blue when selected
-    if (isHovered) return '#525252'; // Lighter gray when hovered
-    return '#404040'; // Default gray
+    if (isSelected === true) return CONNECTION_COLOR_SELECTED;
+    if (isHovered) return CONNECTION_COLOR_HOVER;
+    return CONNECTION_COLOR_DEFAULT;
   };
 
   const getBorderColor = () => {
-    if (isSelected === true) return '#1e40af'; // Darker blue border when selected
-    return '#292929'; // Default dark border
+    if (isSelected === true) return CONNECTION_BORDER_SELECTED;
+    return CONNECTION_BORDER_DEFAULT;
   };
 
   return (

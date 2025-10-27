@@ -1,6 +1,15 @@
 import type { KonvaEventObject } from 'konva/lib/Node';
 import { Circle, Group, Line } from 'react-konva';
 
+import {
+  ORBIT_CENTER_FILL,
+  ORBIT_CENTER_STROKE,
+  ORBIT_CIRCLE_COLOR,
+  ORBIT_LINE_COLOR,
+  ORBIT_POINT_FILL,
+  ORBIT_POINT_STROKE,
+  SELECTION_COLOR,
+} from '@/constants';
 import { useStore } from '@/store';
 import { PositionOrbit } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
@@ -94,7 +103,7 @@ export const OrbitElement = ({
       {/* Орбита (круг) */}
       <Circle
         radius={orbit.radius}
-        stroke={isSelected ? '#FFD700' : 'rgba(255, 255, 255, 0.3)'}
+        stroke={isSelected ? SELECTION_COLOR : ORBIT_CIRCLE_COLOR}
         strokeWidth={isSelected ? 2 : 1}
         listening={false}
       />
@@ -104,8 +113,8 @@ export const OrbitElement = ({
         x={0}
         y={0}
         radius={10}
-        fill={isSelected ? '#FFD700' : 'rgba(255, 255, 255, 0.5)'}
-        stroke={isSelected ? '#FFD700' : 'rgba(255, 255, 255, 0.8)'}
+        fill={isSelected ? SELECTION_COLOR : ORBIT_CENTER_FILL}
+        stroke={isSelected ? SELECTION_COLOR : ORBIT_CENTER_STROKE}
         strokeWidth={2}
       />
 
@@ -116,8 +125,8 @@ export const OrbitElement = ({
           x={point.x - orbit.x}
           y={point.y - orbit.y}
           radius={4}
-          fill={isSelected ? '#FFD700' : 'rgba(255, 255, 255, 0.4)'}
-          stroke={isSelected ? '#FFD700' : 'rgba(255, 255, 255, 0.6)'}
+          fill={isSelected ? SELECTION_COLOR : ORBIT_POINT_FILL}
+          stroke={isSelected ? SELECTION_COLOR : ORBIT_POINT_STROKE}
           strokeWidth={1}
           listening={false}
         />
@@ -129,7 +138,7 @@ export const OrbitElement = ({
             <Line
               key={`line-${index}`}
               points={[0, 0, point.x - orbit.x, point.y - orbit.y]}
-              stroke="rgba(255, 215, 0, 0.2)"
+              stroke={ORBIT_LINE_COLOR}
               strokeWidth={1}
               listening={false}
             />

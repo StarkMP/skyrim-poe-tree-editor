@@ -1,5 +1,7 @@
 import { Line } from 'react-konva';
 
+import { CONNECTION_TEMP_COLOR } from '@/constants';
+
 type TempConnectionLineProps = {
   from: { x: number; y: number };
   to: { x: number; y: number };
@@ -56,7 +58,7 @@ export const TempConnectionLine = ({ from, to, curvature = 0 }: TempConnectionLi
   return (
     <Line
       points={curvePoints}
-      stroke="#4A9EFF"
+      stroke={CONNECTION_TEMP_COLOR}
       strokeWidth={4}
       dash={[10, 5]}
       tension={0}

@@ -33,11 +33,11 @@ export const GRID_MIN_SCALE = 0.3 as const;
 export const SELECTION_COLOR = '#FFD700' as const;
 
 // Connection Lines
-export const CONNECTION_COLOR_DEFAULT = '#1E180D' as const;
-export const CONNECTION_COLOR_HOVER = '#241C13' as const;
+export const CONNECTION_COLOR_DEFAULT = '#202020' as const;
+export const CONNECTION_COLOR_HOVER = '#6E6E6E' as const;
 export const CONNECTION_COLOR_SELECTED = '#60a5fa' as const;
-export const CONNECTION_BORDER_DEFAULT = '#3E3A2F' as const;
-export const CONNECTION_BORDER_SELECTED = '#3E3A2F' as const;
+export const CONNECTION_BORDER_DEFAULT = '#464646' as const;
+export const CONNECTION_BORDER_SELECTED = '#464646' as const;
 export const CONNECTION_TEMP_COLOR = '#4A9EFF' as const;
 
 // Orbit Colors

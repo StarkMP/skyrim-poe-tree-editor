@@ -78,6 +78,7 @@ export type EditorData = {
   connections?: EditorConnections;
   viewport?: ViewportState;
   gridSettings?: GridSettings;
+  globalSettingsExpanded?: boolean;
 };
 
 export type ExportNode = {

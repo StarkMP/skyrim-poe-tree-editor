@@ -70,6 +70,9 @@ export type Store = {
   viewport: ViewportState;
   gridSettings: GridSettings;
 
+  // UI state
+  globalSettingsExpanded: boolean;
+
   // S3 credentials
   s3SecretKey: string | null;
   isS3KeyValid: boolean;
@@ -121,6 +124,9 @@ export type Store = {
 
   // Grid settings
   updateGridSettings: (settings: Partial<GridSettings>) => void;
+
+  // UI state
+  setGlobalSettingsExpanded: (expanded: boolean) => void;
 
   // S3 credentials
   setS3SecretKey: (key: string) => void;
@@ -196,6 +202,7 @@ const loadInitialData = () => {
     connections: {},
     viewport: DEFAULT_VIEWPORT,
     gridSettings: DEFAULT_GRID_SETTINGS,
+    globalSettingsExpanded: true,
   };
 
   try {
@@ -211,6 +218,7 @@ const loadInitialData = () => {
       connections: data.connections || defaults.connections,
       viewport: data.viewport || defaults.viewport,
       gridSettings: data.gridSettings || defaults.gridSettings,
+      globalSettingsExpanded: data.globalSettingsExpanded ?? defaults.globalSettingsExpanded,
     };
   } catch (error) {
     console.error('Failed to load from localStorage:', error);
@@ -237,6 +245,7 @@ export const useStore = create<Store>((set, get) => {
     viewportCenterRequest: null,
     viewport: initialData.viewport,
     gridSettings: initialData.gridSettings,
+    globalSettingsExpanded: initialData.globalSettingsExpanded,
     s3SecretKey: storedSecretKey,
     isS3KeyValid: !!storedSecretKey,
     undoStack: [],
@@ -618,6 +627,12 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
+    // UI state
+    setGlobalSettingsExpanded: (expanded: boolean) => {
+      set({ globalSettingsExpanded: expanded });
+      get().saveToLocalStorage();
+    },
+
     // S3 credentials
     setS3SecretKey: (key: string) => {
       set({ s3SecretKey: key, isS3KeyValid: true });
@@ -875,6 +890,7 @@ export const useStore = create<Store>((set, get) => {
         connections: state.connections,
         viewport: state.viewport,
         gridSettings: state.gridSettings,
+        globalSettingsExpanded: state.globalSettingsExpanded,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     },
@@ -888,6 +904,7 @@ export const useStore = create<Store>((set, get) => {
         connections: data.connections,
         viewport: data.viewport,
         gridSettings: data.gridSettings,
+        globalSettingsExpanded: data.globalSettingsExpanded,
         selectedElements: new Set(),
         multiSelectedElementsData: new Map(),
         undoStack: [], // Start with empty undo stack

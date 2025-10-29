@@ -16,7 +16,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { VirtualizedCombobox } from '@/components/ui/virtualized-combobox';
 import {
-  NODE_ICON_RADIUS_PERCENT,
+  NODE_ICON_SIZE_PERCENT,
   NODE_RADIUS_LARGE,
   NODE_RADIUS_MASTER,
   NODE_RADIUS_SMALL,
@@ -69,16 +69,16 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
   const getRequiredIconSize = (nodeType: NodeType): number => {
     switch (nodeType) {
       case NodeType.SmallNode: {
-        return NODE_RADIUS_SMALL * 2 * NODE_ICON_RADIUS_PERCENT;
+        return NODE_RADIUS_SMALL * 2 * NODE_ICON_SIZE_PERCENT;
       }
       case NodeType.LargeNode: {
-        return NODE_RADIUS_LARGE * 2 * NODE_ICON_RADIUS_PERCENT;
+        return NODE_RADIUS_LARGE * 2 * NODE_ICON_SIZE_PERCENT;
       }
       case NodeType.MasterNode: {
-        return NODE_RADIUS_MASTER * 2 * NODE_ICON_RADIUS_PERCENT;
+        return NODE_RADIUS_MASTER * 2 * NODE_ICON_SIZE_PERCENT;
       }
       default: {
-        return NODE_RADIUS_SMALL * 2 * NODE_ICON_RADIUS_PERCENT;
+        return NODE_RADIUS_SMALL * 2 * NODE_ICON_SIZE_PERCENT;
       }
     }
   };

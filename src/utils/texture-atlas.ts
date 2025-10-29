@@ -1,3 +1,4 @@
+import { NODE_ICON_SIZE_PERCENT } from '@/constants';
 import { NodeType } from '@/types';
 
 import { getNodeRadius } from './node-helpers';
@@ -128,11 +129,21 @@ export function packTextureAtlas(
     // Рисуем иконку с круглой маской (если есть иконка)
     if (node.iconImage) {
       ctx.save();
+
+      // Применяем NODE_ICON_SIZE_PERCENT для размера иконки
+      const iconRadius = radius * NODE_ICON_SIZE_PERCENT;
+
       ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, iconRadius, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(node.iconImage, centerX - radius, centerY - radius, radius * 2, radius * 2);
+      ctx.drawImage(
+        node.iconImage,
+        centerX - iconRadius,
+        centerY - iconRadius,
+        iconRadius * 2,
+        iconRadius * 2
+      );
       ctx.restore();
     }
 

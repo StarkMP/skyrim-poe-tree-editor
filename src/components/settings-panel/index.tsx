@@ -1,5 +1,5 @@
 /* eslint-disable unicorn/no-nested-ternary */
-import { ArrowUp, Download, Key, Trash2 } from 'lucide-react';
+import { ArrowUp, Download, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { S3CredentialsModal } from '@/components/s3-credentials-modal';
@@ -16,11 +16,9 @@ import { PanelSection } from '@/components/ui/panel-section';
 import { useStore } from '@/store';
 
 import { Badge } from '../ui/badge';
-import { Label } from '../ui/label';
-import { Slider } from '../ui/slider';
-import { Switch } from '../ui/switch';
 import { ConnectionSettings } from './connection-settings';
 import { ExportDialog } from './export-dialog';
+import { GlobalSettings } from './global-settings';
 import { ImageSettings } from './image-settings';
 import { ImportDialog } from './import-dialog';
 import { NodeSettings } from './node-settings';
@@ -34,11 +32,8 @@ export const SettingsPanel = () => {
     images,
     orbits,
     connections,
-    gridSettings,
-    updateGridSettings,
     clearAll,
     setS3SecretKey,
-    clearS3SecretKey,
   } = useStore();
 
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -103,69 +98,10 @@ export const SettingsPanel = () => {
           </div>
         </PanelSection>
 
-        <PanelSection title="Глобальные настройки">
-          <div className="flex flex-col gap-4 w-full">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleChangeS3Key}
-              className="w-full text-xs"
-            >
-              <Key className="w-3 h-3" /> Изменить ключ S3
-            </Button>
-
-            <div className="flex w-full items-center justify-between">
-              <Label htmlFor="positioning-grid" className="text-xs">
-                Сетка позиционирования
-              </Label>
-              <Switch
-                id="positioning-grid"
-                checked={gridSettings.enabled}
-                onCheckedChange={(checked) => updateGridSettings({ enabled: checked })}
-              />
-            </div>
-            <div
-              className="flex flex-col gap-3"
-              style={{
-                pointerEvents: gridSettings.enabled ? 'auto' : 'none',
-                opacity: gridSettings.enabled ? 1 : 0.5,
-              }}
-            >
-              <div className="flex items-center gap-4 justify-between">
-                <Label htmlFor="grid-size" className="text-xs">
-                  Размер ячейки
-                </Label>
-                <Badge variant="secondary">{gridSettings.size}px</Badge>
-              </div>
-              <Slider
-                id="grid-size"
-                value={[gridSettings.size]}
-                onValueChange={(value) => updateGridSettings({ size: value[0] })}
-                max={200}
-                min={60}
-                step={20}
-              />
-              <div className="flex items-center gap-4 justify-between">
-                <Label htmlFor="grid-rotation" className="text-xs">
-                  Поворот сетки
-                </Label>
-                <Badge variant="secondary">{gridSettings.rotation}°</Badge>
-              </div>
-              <Slider
-                className="mb-2"
-                id="grid-rotation"
-                value={[gridSettings.rotation]}
-                onValueChange={(value) => updateGridSettings({ rotation: value[0] })}
-                max={360}
-                min={0}
-                step={5}
-              />
-            </div>
-          </div>
-        </PanelSection>
-
-        <div className="flex-1 relative overflow-y-auto size-full">
+        <div className="flex-1 relative size-full overflow-y-auto">
           <div className="absolute left-0 top-0 size-full">
+            <GlobalSettings onChangeS3Key={handleChangeS3Key} />
+
             {selectedElements.size > 0 ? (
               <PanelSection>
                 <div className="flex flex-col gap-2 items-center">

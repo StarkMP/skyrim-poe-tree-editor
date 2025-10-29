@@ -6,7 +6,7 @@ import useImage from 'use-image';
 import largeNodeBorder from '@/assets/large-node-border.png';
 import masterNodeBorder from '@/assets/master-node-border.png';
 import smallNodeBorder from '@/assets/small-node-border.png';
-import { NODE_ICON_RADIUS_PERCENT, SELECTION_COLOR } from '@/constants';
+import { NODE_ICON_SIZE_PERCENT, SELECTION_COLOR } from '@/constants';
 import { useStore } from '@/store';
 import { EditorNode, NodeType } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
@@ -61,7 +61,7 @@ export const NodeElement = ({
     }
 
     const canvas = document.createElement('canvas');
-    const size = radius * 2 * NODE_ICON_RADIUS_PERCENT;
+    const size = radius * 2 * NODE_ICON_SIZE_PERCENT;
     canvas.width = size;
     canvas.height = size;
 
@@ -181,10 +181,10 @@ export const NodeElement = ({
       {imageElement ? (
         <Image
           image={imageElement}
-          x={-(radius * 2 * NODE_ICON_RADIUS_PERCENT) / 2}
-          y={-(radius * 2 * NODE_ICON_RADIUS_PERCENT) / 2}
-          width={radius * 2 * NODE_ICON_RADIUS_PERCENT}
-          height={radius * 2 * NODE_ICON_RADIUS_PERCENT}
+          x={-(radius * 2 * NODE_ICON_SIZE_PERCENT) / 2}
+          y={-(radius * 2 * NODE_ICON_SIZE_PERCENT) / 2}
+          width={radius * 2 * NODE_ICON_SIZE_PERCENT}
+          height={radius * 2 * NODE_ICON_SIZE_PERCENT}
         />
       ) : null}
 

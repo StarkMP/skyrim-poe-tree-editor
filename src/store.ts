@@ -28,6 +28,11 @@ type SelectedElement = {
   type: 'node' | 'image' | 'orbit' | 'connection';
 } | null;
 
+type MultiSelectedElement = {
+  id: string;
+  type: 'node' | 'image' | 'orbit';
+};
+
 type ViewportCenterRequest = {
   id: string;
   type: 'node' | 'image' | 'orbit';
@@ -59,6 +64,8 @@ export type Store = {
   gamePerks: GamePerksData;
   gamePerkIdsSet: Set<string>; // Cached set for O(1) validation
   selectedElement: SelectedElement;
+  selectedElements: Set<string>; // IDs of multiple selected elements
+  multiSelectedElementsData: Map<string, MultiSelectedElement>; // Full data for multi-selected elements
   viewportCenterRequest: ViewportCenterRequest;
   viewport: ViewportState;
   gridSettings: GridSettings;
@@ -93,6 +100,18 @@ export type Store = {
   selectElement: (
     id: string | null,
     type: 'node' | 'image' | 'orbit' | 'connection' | null
+  ) => void;
+  toggleElementSelection: (id: string, type: 'node' | 'image' | 'orbit') => void;
+  clearSelection: () => void;
+  isElementSelected: (id: string) => boolean;
+
+  // Multi-element operations
+  updateMultipleElements: (
+    updates: Array<{
+      id: string;
+      type: 'node' | 'image' | 'orbit';
+      updates: Partial<EditorNode> | Partial<EditorImage> | Partial<PositionOrbit>;
+    }>
   ) => void;
 
   // Viewport
@@ -213,6 +232,8 @@ export const useStore = create<Store>((set, get) => {
     gamePerks,
     gamePerkIdsSet: new Set(Object.keys(gamePerks)),
     selectedElement: null,
+    selectedElements: new Set(),
+    multiSelectedElementsData: new Map(),
     viewportCenterRequest: null,
     viewport: initialData.viewport,
     gridSettings: initialData.gridSettings,
@@ -497,7 +518,80 @@ export const useStore = create<Store>((set, get) => {
     selectElement: (id: string | null, type: 'node' | 'image' | 'orbit' | 'connection' | null) => {
       set({
         selectedElement: id && type ? { id, type } : null,
+        selectedElements: new Set(),
+        multiSelectedElementsData: new Map(),
       });
+    },
+
+    toggleElementSelection: (id: string, type: 'node' | 'image' | 'orbit') => {
+      set((state) => {
+        const newSelectedElements = new Set(state.selectedElements);
+        const newMultiSelectedElementsData = new Map(state.multiSelectedElementsData);
+
+        if (newSelectedElements.has(id)) {
+          // Remove from selection
+          newSelectedElements.delete(id);
+          newMultiSelectedElementsData.delete(id);
+        } else {
+          // Add to selection
+          newSelectedElements.add(id);
+          newMultiSelectedElementsData.set(id, { id, type });
+        }
+
+        return {
+          selectedElement: null, // Clear single selection when multi-selecting
+          selectedElements: newSelectedElements,
+          multiSelectedElementsData: newMultiSelectedElementsData,
+        };
+      });
+    },
+
+    clearSelection: () => {
+      set({
+        selectedElement: null,
+        selectedElements: new Set(),
+        multiSelectedElementsData: new Map(),
+      });
+    },
+
+    isElementSelected: (id: string) => {
+      const state = get();
+      return state.selectedElements.has(id) || state.selectedElement?.id === id;
+    },
+
+    // Multi-element operations
+    updateMultipleElements: (
+      updates: Array<{
+        id: string;
+        type: 'node' | 'image' | 'orbit';
+        updates: Partial<EditorNode> | Partial<EditorImage> | Partial<PositionOrbit>;
+      }>
+    ) => {
+      set((state) => {
+        const newNodes = { ...state.nodes };
+        const newImages = { ...state.images };
+        const newOrbits = { ...state.orbits };
+
+        for (const update of updates) {
+          if (update.type === 'node' && newNodes[update.id]) {
+            const currentNode = newNodes[update.id];
+            newNodes[update.id] = { ...currentNode, ...update.updates };
+          } else if (update.type === 'image' && newImages[update.id]) {
+            const currentImage = newImages[update.id];
+            newImages[update.id] = { ...currentImage, ...update.updates };
+          } else if (update.type === 'orbit' && newOrbits[update.id]) {
+            const currentOrbit = newOrbits[update.id];
+            newOrbits[update.id] = { ...currentOrbit, ...update.updates };
+          }
+        }
+
+        return {
+          nodes: newNodes,
+          images: newImages,
+          orbits: newOrbits,
+        };
+      });
+      get().saveToLocalStorage();
     },
 
     // Viewport
@@ -736,6 +830,8 @@ export const useStore = create<Store>((set, get) => {
         viewport: data.viewport || DEFAULT_VIEWPORT,
         gridSettings: data.gridSettings || DEFAULT_GRID_SETTINGS,
         selectedElement: null,
+        selectedElements: new Set(),
+        multiSelectedElementsData: new Map(),
         undoStack: [], // Clear undo stack on import
       });
       get().saveToLocalStorage();
@@ -762,6 +858,8 @@ export const useStore = create<Store>((set, get) => {
         viewport: DEFAULT_VIEWPORT,
         gridSettings: DEFAULT_GRID_SETTINGS,
         selectedElement: null,
+        selectedElements: new Set(),
+        multiSelectedElementsData: new Map(),
         undoStack: [], // Clear undo stack
       });
       localStorage.removeItem(STORAGE_KEY);
@@ -790,6 +888,8 @@ export const useStore = create<Store>((set, get) => {
         connections: data.connections,
         viewport: data.viewport,
         gridSettings: data.gridSettings,
+        selectedElements: new Set(),
+        multiSelectedElementsData: new Map(),
         undoStack: [], // Start with empty undo stack
       });
     },

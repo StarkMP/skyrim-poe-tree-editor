@@ -1,6 +1,6 @@
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Layer, Stage } from 'react-konva';
 
 import { MAX_ZOOM, MIN_ZOOM, VIEWPORT_BACKGROUND_COLOR, ZOOM_SPEED } from '@/constants';
@@ -42,16 +42,28 @@ export const Viewport = () => {
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [draggingNodePos, setDraggingNodePos] = useState<{ x: number; y: number } | null>(null);
 
+  // Multi-selection dragging state
+  const [multiDragStartPositions, setMultiDragStartPositions] = useState<
+    Map<string, { x: number; y: number }>
+  >(new Map());
+  const [multiDragLeaderId, setMultiDragLeaderId] = useState<string | null>(null);
+  const [multiDraggingNodeIds, setMultiDraggingNodeIds] = useState<Set<string>>(new Set());
+
   const {
     nodes,
     images,
     orbits,
     connections,
     selectedElement,
+    selectedElements,
+    multiSelectedElementsData,
     viewportCenterRequest,
     viewport,
     gridSettings,
     selectElement,
+    toggleElementSelection,
+    clearSelection,
+    isElementSelected,
     addNode,
     addImage,
     addOrbit,
@@ -61,6 +73,7 @@ export const Viewport = () => {
     addConnection,
     removeAllConnections,
     updateViewport,
+    updateMultipleElements,
     clearCenterRequest,
   } = useStore();
 
@@ -300,8 +313,24 @@ export const Viewport = () => {
     setContextMenu(null);
   };
 
-  const handleOrbitClick = (orbitId: string) => {
-    selectElement(orbitId, 'orbit');
+  const handleOrbitClick = (orbitId: string, e?: MouseEvent) => {
+    const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
+    if (isMultiSelectKey) {
+      // If there's a single selected element, add it to multi-selection first
+      if (
+        selectedElement &&
+        !selectedElements.has(selectedElement.id) &&
+        selectedElement.type !== 'connection'
+      ) {
+        toggleElementSelection(
+          selectedElement.id,
+          selectedElement.type as 'node' | 'image' | 'orbit'
+        );
+      }
+      toggleElementSelection(orbitId, 'orbit');
+    } else {
+      selectElement(orbitId, 'orbit');
+    }
   };
 
   const handleOrbitContextMenu = (orbitId: string, x: number, y: number) => {
@@ -315,18 +344,51 @@ export const Viewport = () => {
     });
   };
 
-  const handleNodeClick = (nodeId: string) => {
+  const handleNodeClick = (nodeId: string, e?: MouseEvent) => {
     if (isCreatingConnection && connectionStart && connectionStart.nodeId !== nodeId) {
       addConnection(connectionStart.nodeId, nodeId);
       setIsCreatingConnection(false);
       setConnectionStart(null);
     } else {
-      selectElement(nodeId, 'node');
+      // Check for Shift or Ctrl key for multi-selection
+      const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
+      if (isMultiSelectKey) {
+        // If there's a single selected element, add it to multi-selection first
+        if (
+          selectedElement &&
+          !selectedElements.has(selectedElement.id) &&
+          selectedElement.type !== 'connection'
+        ) {
+          toggleElementSelection(
+            selectedElement.id,
+            selectedElement.type as 'node' | 'image' | 'orbit'
+          );
+        }
+        toggleElementSelection(nodeId, 'node');
+      } else {
+        selectElement(nodeId, 'node');
+      }
     }
   };
 
-  const handleImageClick = (imageId: string) => {
-    selectElement(imageId, 'image');
+  const handleImageClick = (imageId: string, e?: MouseEvent) => {
+    const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
+    if (isMultiSelectKey) {
+      // If there's a single selected element, add it to multi-selection first
+      if (
+        selectedElement &&
+        !selectedElements.has(selectedElement.id) &&
+        selectedElement.type !== 'connection'
+      ) {
+        toggleElementSelection(
+          selectedElement.id,
+          selectedElement.type as 'node' | 'image' | 'orbit'
+        );
+      }
+      toggleElementSelection(imageId, 'image');
+    } else {
+      selectElement(imageId, 'image');
+    }
   };
 
   const handleNodeContextMenu = (nodeId: string, x: number, y: number) => {
@@ -354,6 +416,111 @@ export const Viewport = () => {
   const handleConnectionClick = (connectionId: string) => {
     selectElement(connectionId, 'connection');
   };
+
+  // Multi-element drag handlers
+  const handleMultiDragStart = (leaderId: string) => {
+    const startPositions = new Map<string, { x: number; y: number }>();
+    const draggingNodes = new Set<string>();
+
+    // Store start positions for all selected elements
+    for (const [id, elementData] of multiSelectedElementsData.entries()) {
+      if (elementData.type === 'node' && nodes[id]) {
+        startPositions.set(id, { x: nodes[id].x, y: nodes[id].y });
+        draggingNodes.add(id);
+      } else if (elementData.type === 'image' && images[id]) {
+        startPositions.set(id, { x: images[id].x, y: images[id].y });
+      } else if (elementData.type === 'orbit' && orbits[id]) {
+        startPositions.set(id, { x: orbits[id].x, y: orbits[id].y });
+      }
+    }
+
+    setMultiDragStartPositions(startPositions);
+    setMultiDragLeaderId(leaderId);
+    setMultiDraggingNodeIds(draggingNodes);
+    setIsDraggingElement(true);
+  };
+
+  const handleMultiDragMove = (leaderId: string, newLeaderPos: { x: number; y: number }) => {
+    const startPos = multiDragStartPositions.get(leaderId);
+    if (!startPos) return;
+
+    // Calculate offset from leader's start position
+    const offsetX = newLeaderPos.x - startPos.x;
+    const offsetY = newLeaderPos.y - startPos.y;
+
+    // Update positions for all selected elements INCLUDING leader
+    const updates: Array<{
+      id: string;
+      type: 'node' | 'image' | 'orbit';
+      updates: { x: number; y: number };
+    }> = [];
+
+    for (const [id, elementData] of multiSelectedElementsData.entries()) {
+      const startElementPos = multiDragStartPositions.get(id);
+      if (!startElementPos) continue;
+
+      updates.push({
+        id,
+        type: elementData.type,
+        updates: {
+          x: startElementPos.x + offsetX,
+          y: startElementPos.y + offsetY,
+        },
+      });
+    }
+
+    if (updates.length > 0) {
+      updateMultipleElements(updates);
+    }
+  };
+
+  const handleMultiDragEnd = (leaderId: string, finalLeaderPos: { x: number; y: number }) => {
+    const startPos = multiDragStartPositions.get(leaderId);
+    if (!startPos) {
+      setMultiDragStartPositions(new Map());
+      setMultiDragLeaderId(null);
+      setMultiDraggingNodeIds(new Set());
+      setIsDraggingElement(false);
+      return;
+    }
+
+    // Calculate final offset
+    const offsetX = finalLeaderPos.x - startPos.x;
+    const offsetY = finalLeaderPos.y - startPos.y;
+
+    // Prepare final updates for all elements including leader
+    const updates: Array<{
+      id: string;
+      type: 'node' | 'image' | 'orbit';
+      updates: { x: number; y: number };
+    }> = [];
+
+    for (const [id, elementData] of multiSelectedElementsData.entries()) {
+      const startElementPos = multiDragStartPositions.get(id);
+      if (!startElementPos) continue;
+
+      updates.push({
+        id,
+        type: elementData.type,
+        updates: {
+          x: startElementPos.x + offsetX,
+          y: startElementPos.y + offsetY,
+        },
+      });
+    }
+
+    if (updates.length > 0) {
+      updateMultipleElements(updates);
+    }
+
+    setMultiDragStartPositions(new Map());
+    setMultiDragLeaderId(null);
+    setMultiDraggingNodeIds(new Set());
+    setIsDraggingElement(false);
+  };
+
+  // Determine if element is in multi-selection mode
+  const isMultiSelectMode = selectedElements.size > 0;
 
   return (
     <div
@@ -390,11 +557,34 @@ export const Viewport = () => {
                 key={id}
                 id={id}
                 image={image}
-                isSelected={selectedElement?.id === id ? selectedElement?.type === 'image' : null}
-                onSelect={() => handleImageClick(id)}
+                isSelected={
+                  isMultiSelectMode
+                    ? isElementSelected(id)
+                    : selectedElement?.id === id
+                      ? selectedElement?.type === 'image'
+                      : null
+                }
+                onSelect={(e) => handleImageClick(id, e?.evt)}
                 onContextMenu={handleImageContextMenu}
-                onDragStart={() => setIsDraggingElement(true)}
-                onDragEnd={() => setIsDraggingElement(false)}
+                onDragStart={() => {
+                  if (isMultiSelectMode && isElementSelected(id)) {
+                    handleMultiDragStart(id);
+                  } else {
+                    setIsDraggingElement(true);
+                  }
+                }}
+                onDragMove={(pos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragMove(id, pos);
+                  }
+                }}
+                onDragEnd={(finalPos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragEnd(id, finalPos);
+                  } else {
+                    setIsDraggingElement(false);
+                  }
+                }}
               />
             ))}
 
@@ -404,10 +594,13 @@ export const Viewport = () => {
               const toNode = nodes[connection.toId];
               if (!fromNode || !toNode) return null;
 
-              // Hide connection if one of its nodes is being dragged
+              // Hide connection if one of its nodes is being dragged (single or multi)
               const isHidden =
-                draggingNodeId &&
-                (connection.fromId === draggingNodeId || connection.toId === draggingNodeId);
+                (draggingNodeId &&
+                  (connection.fromId === draggingNodeId || connection.toId === draggingNodeId)) ||
+                (multiDraggingNodeIds.size > 0 &&
+                  (multiDraggingNodeIds.has(connection.fromId) ||
+                    multiDraggingNodeIds.has(connection.toId)));
 
               return (
                 <ConnectionLine
@@ -426,7 +619,7 @@ export const Viewport = () => {
               );
             })}
 
-            {/* Temporary lines while dragging node */}
+            {/* Temporary lines while dragging single node */}
             {draggingNodeId && draggingNodePos
               ? Object.entries(connections)
                   .filter(
@@ -439,8 +632,6 @@ export const Viewport = () => {
                     if (!connectedNode) return null;
 
                     // Check if we need to invert curvature based on direction
-                    // If the stored connection goes from connectedId to draggingNodeId,
-                    // but we're drawing from draggingNodeId to connectedId, invert curvature
                     const shouldInvertCurvature =
                       connection.fromId === connectedId && connection.toId === draggingNodeId;
 
@@ -458,25 +649,71 @@ export const Viewport = () => {
                   })
               : null}
 
+            {/* Temporary lines while dragging multiple nodes */}
+            {multiDraggingNodeIds.size > 0
+              ? Object.entries(connections)
+                  .filter(
+                    ([, conn]) =>
+                      multiDraggingNodeIds.has(conn.fromId) || multiDraggingNodeIds.has(conn.toId)
+                  )
+                  .map(([connId, connection]) => {
+                    const fromNode = nodes[connection.fromId];
+                    const toNode = nodes[connection.toId];
+                    if (!fromNode || !toNode) return null;
+
+                    // Use current positions from store (updated by handleMultiDragMove)
+                    const fromPos = { x: fromNode.x, y: fromNode.y };
+                    const toPos = { x: toNode.x, y: toNode.y };
+
+                    return (
+                      <TempConnectionLine
+                        key={`temp-multi-${connId}`}
+                        from={fromPos}
+                        to={toPos}
+                        curvature={connection.curvature ?? 0}
+                      />
+                    );
+                  })
+              : null}
+
             {/* Nodes */}
             {Object.entries(nodes).map(([id, node]) => (
               <NodeElement
                 key={id}
                 id={id}
                 node={node}
-                isSelected={selectedElement?.id === id ? selectedElement?.type === 'node' : null}
-                onSelect={() => handleNodeClick(id)}
+                isSelected={
+                  isMultiSelectMode
+                    ? isElementSelected(id)
+                    : selectedElement?.id === id
+                      ? selectedElement?.type === 'node'
+                      : null
+                }
+                onSelect={(e) => handleNodeClick(id, e?.evt)}
                 onContextMenu={handleNodeContextMenu}
                 onDragStart={() => {
-                  setIsDraggingElement(true);
-                  setDraggingNodeId(id);
-                  setDraggingNodePos({ x: node.x, y: node.y });
+                  if (isMultiSelectMode && isElementSelected(id)) {
+                    handleMultiDragStart(id);
+                  } else {
+                    setIsDraggingElement(true);
+                    setDraggingNodeId(id);
+                    setDraggingNodePos({ x: node.x, y: node.y });
+                  }
                 }}
-                onDragMove={(pos) => setDraggingNodePos(pos)}
-                onDragEnd={() => {
-                  setIsDraggingElement(false);
-                  setDraggingNodeId(null);
-                  setDraggingNodePos(null);
+                onDragMove={(pos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragMove(id, pos);
+                  }
+                  setDraggingNodePos(pos);
+                }}
+                onDragEnd={(finalPos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragEnd(id, finalPos);
+                  } else {
+                    setIsDraggingElement(false);
+                    setDraggingNodeId(null);
+                    setDraggingNodePos(null);
+                  }
                 }}
               />
             ))}
@@ -487,11 +724,34 @@ export const Viewport = () => {
                 key={id}
                 id={id}
                 orbit={orbit}
-                isSelected={selectedElement?.id === id ? selectedElement?.type === 'orbit' : null}
-                onSelect={() => handleOrbitClick(id)}
+                isSelected={
+                  isMultiSelectMode
+                    ? isElementSelected(id)
+                    : selectedElement?.id === id
+                      ? selectedElement?.type === 'orbit'
+                      : null
+                }
+                onSelect={(e) => handleOrbitClick(id, e?.evt)}
                 onContextMenu={handleOrbitContextMenu}
-                onDragStart={() => setIsDraggingElement(true)}
-                onDragEnd={() => setIsDraggingElement(false)}
+                onDragStart={() => {
+                  if (isMultiSelectMode && isElementSelected(id)) {
+                    handleMultiDragStart(id);
+                  } else {
+                    setIsDraggingElement(true);
+                  }
+                }}
+                onDragMove={(pos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragMove(id, pos);
+                  }
+                }}
+                onDragEnd={(finalPos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragEnd(id, finalPos);
+                  } else {
+                    setIsDraggingElement(false);
+                  }
+                }}
               />
             ))}
 

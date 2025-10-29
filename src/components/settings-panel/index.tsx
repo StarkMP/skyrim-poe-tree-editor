@@ -29,6 +29,7 @@ import { OrbitSettings } from './orbit-settings';
 export const SettingsPanel = () => {
   const {
     selectedElement,
+    selectedElements,
     nodes,
     images,
     orbits,
@@ -165,7 +166,19 @@ export const SettingsPanel = () => {
 
         <div className="flex-1 relative overflow-y-auto size-full">
           <div className="absolute left-0 top-0 size-full">
-            {selectedNode && selectedElement ? (
+            {selectedElements.size > 0 ? (
+              <PanelSection>
+                <div className="flex flex-col gap-2 items-center">
+                  <span className="text-center text-sm font-medium">
+                    Выбрано несколько элементов для перемещения
+                  </span>
+                  <Badge variant="secondary">{selectedElements.size} элементов</Badge>
+                  <span className="text-center text-xs opacity-70">
+                    Перетащите любой из выбранных элементов, чтобы переместить всю группу
+                  </span>
+                </div>
+              </PanelSection>
+            ) : selectedNode && selectedElement ? (
               <NodeSettings nodeId={selectedElement.id} node={selectedNode} />
             ) : selectedImage && selectedElement ? (
               <ImageSettings imageId={selectedElement.id} image={selectedImage} />

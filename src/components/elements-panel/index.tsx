@@ -81,7 +81,7 @@ export const ElementsPanel = () => {
         <div className="p-2">
           <Input
             type="text"
-            placeholder="Поиск по названию или perkId..."
+            placeholder="Поиск по элементам..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-8 text-xs"
@@ -106,7 +106,7 @@ export const ElementsPanel = () => {
                   onClick={() => selectElement(element.id, element.type)}
                 >
                   <div className="flex items-center gap-2 w-full truncate">
-                    {iconByType[element.type]}
+                    <span>{iconByType[element.type]}</span>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="text-xs truncate">{element.label}</span>

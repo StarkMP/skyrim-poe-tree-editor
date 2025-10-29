@@ -24,11 +24,11 @@ type NodeElementProps = {
   id: string;
   node: EditorNode;
   isSelected: boolean | null;
-  onSelect: () => void;
+  onSelect: (e: KonvaEventObject<MouseEvent>) => void;
   onContextMenu: (id: string, x: number, y: number) => void;
   onDragStart: () => void;
   onDragMove: (pos: { x: number; y: number }) => void;
-  onDragEnd: () => void;
+  onDragEnd: (finalPos: { x: number; y: number }) => void;
 };
 
 export const NodeElement = ({
@@ -151,7 +151,7 @@ export const NodeElement = ({
       x: finalX,
       y: finalY,
     });
-    onDragEnd();
+    onDragEnd({ x: finalX, y: finalY });
   };
 
   const handleContextMenu = (e: KonvaEventObject<PointerEvent>) => {
@@ -162,7 +162,7 @@ export const NodeElement = ({
 
   const handleClick = (e: KonvaEventObject<MouseEvent>) => {
     e.cancelBubble = true;
-    onSelect();
+    onSelect(e);
   };
 
   return (

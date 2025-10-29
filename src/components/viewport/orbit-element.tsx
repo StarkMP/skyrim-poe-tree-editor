@@ -19,10 +19,11 @@ type OrbitElementProps = {
   id: string;
   orbit: PositionOrbit;
   isSelected: boolean | null;
-  onSelect: () => void;
+  onSelect: (e: KonvaEventObject<MouseEvent>) => void;
   onContextMenu: (id: string, x: number, y: number) => void;
   onDragStart: () => void;
-  onDragEnd: () => void;
+  onDragMove?: (pos: { x: number; y: number }) => void;
+  onDragEnd: (finalPos: { x: number; y: number }) => void;
 };
 
 export const OrbitElement = ({
@@ -32,6 +33,7 @@ export const OrbitElement = ({
   onSelect,
   onContextMenu,
   onDragStart,
+  onDragMove,
   onDragEnd,
 }: OrbitElementProps) => {
   const updateOrbit = useStore((state) => state.updateOrbit);
@@ -42,14 +44,19 @@ export const OrbitElement = ({
   const orbitPoints = points.slice(1);
 
   const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
+    const currentPos = { x: e.target.x(), y: e.target.y() };
+
     if (gridSettings.enabled) {
       const snapped = snapToRotatedGrid(
-        e.target.x(),
-        e.target.y(),
+        currentPos.x,
+        currentPos.y,
         gridSettings.size,
         gridSettings.rotation
       );
       e.target.position(snapped);
+      onDragMove?.(snapped);
+    } else {
+      onDragMove?.(currentPos);
     }
   };
 
@@ -75,7 +82,7 @@ export const OrbitElement = ({
       x: finalX,
       y: finalY,
     });
-    onDragEnd();
+    onDragEnd({ x: finalX, y: finalY });
   };
 
   const handleContextMenu = (e: KonvaEventObject<PointerEvent>) => {
@@ -86,7 +93,7 @@ export const OrbitElement = ({
 
   const handleClick = (e: KonvaEventObject<MouseEvent>) => {
     e.cancelBubble = true;
-    onSelect();
+    onSelect(e);
   };
 
   return (

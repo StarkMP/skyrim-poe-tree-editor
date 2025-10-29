@@ -2,10 +2,11 @@
 export const MOUSE_WHEEL_BTN_INDEX = 4 as const;
 
 // Node sizes
-export const NODE_RADIUS_SMALL = 20 as const;
-export const NODE_RADIUS_LARGE = 30 as const;
-export const NODE_RADIUS_MASTER = 40 as const;
+export const NODE_RADIUS_SMALL = 24 as const;
+export const NODE_RADIUS_LARGE = 36 as const;
+export const NODE_RADIUS_MASTER = 48 as const;
 export const NODE_STROKE_WIDTH = 8 as const;
+export const NODE_ICON_RADIUS_PERCENT = 0.75 as const;
 
 // Zoom
 export const ZOOM_SPEED = 0.02 as const;
@@ -24,20 +25,21 @@ export const ORBIT_SNAP_THRESHOLD = 30 as const;
 
 // Viewport
 export const VIEWPORT_BACKGROUND_COLOR = '#080B10' as const;
+export const VIEWPORT_WORLD_SIZE = 100_000 as const; // Размер мирового пространства
 
 // Grid
 export const GRID_DOT_COLOR = 'rgba(255, 255, 255, 0.2)' as const;
 export const GRID_MIN_SCALE = 0.3 as const;
 
 // Selection (universal selection color)
-export const SELECTION_COLOR = '#FFD700' as const;
+export const SELECTION_COLOR = '#4A9EFF' as const;
 
 // Connection Lines
-export const CONNECTION_COLOR_DEFAULT = '#202020' as const;
-export const CONNECTION_COLOR_HOVER = '#6E6E6E' as const;
-export const CONNECTION_COLOR_SELECTED = '#60a5fa' as const;
-export const CONNECTION_BORDER_DEFAULT = '#464646' as const;
-export const CONNECTION_BORDER_SELECTED = '#464646' as const;
+export const CONNECTION_COLOR_DEFAULT = '#1E180D' as const;
+export const CONNECTION_COLOR_HOVER = '#241C13' as const;
+export const CONNECTION_COLOR_SELECTED = '#4A9EFF' as const;
+export const CONNECTION_BORDER_DEFAULT = '#3E3A2F' as const;
+export const CONNECTION_BORDER_SELECTED = '#3E3A2F' as const;
 export const CONNECTION_TEMP_COLOR = '#4A9EFF' as const;
 
 // Orbit Colors
@@ -46,7 +48,7 @@ export const ORBIT_CENTER_FILL = 'rgba(255, 255, 255, 0.5)' as const;
 export const ORBIT_CENTER_STROKE = 'rgba(255, 255, 255, 0.8)' as const;
 export const ORBIT_POINT_FILL = 'rgba(255, 255, 255, 0.4)' as const;
 export const ORBIT_POINT_STROKE = 'rgba(255, 255, 255, 0.6)' as const;
-export const ORBIT_LINE_COLOR = 'rgba(255, 215, 0, 0.2)' as const;
+export const ORBIT_LINE_COLOR = 'rgba(155, 155, 215, 0.2)' as const;
 
 // Image Border
 export const IMAGE_BORDER_INACTIVE = '#404040' as const;

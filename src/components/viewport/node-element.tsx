@@ -6,7 +6,7 @@ import useImage from 'use-image';
 import largeNodeBorder from '@/assets/large-node-border.png';
 import masterNodeBorder from '@/assets/master-node-border.png';
 import smallNodeBorder from '@/assets/small-node-border.png';
-import { SELECTION_COLOR } from '@/constants';
+import { NODE_ICON_RADIUS_PERCENT, SELECTION_COLOR } from '@/constants';
 import { useStore } from '@/store';
 import { EditorNode, NodeType } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
@@ -61,7 +61,7 @@ export const NodeElement = ({
     }
 
     const canvas = document.createElement('canvas');
-    const size = radius * 2;
+    const size = radius * 2 * NODE_ICON_RADIUS_PERCENT;
     canvas.width = size;
     canvas.height = size;
 
@@ -69,8 +69,9 @@ export const NodeElement = ({
     if (!ctx) return;
 
     // Create circular clip
+    const imageRadius = size / 2;
     ctx.beginPath();
-    ctx.arc(radius, radius, radius, 0, Math.PI * 2);
+    ctx.arc(imageRadius, imageRadius, imageRadius, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
 
@@ -180,10 +181,10 @@ export const NodeElement = ({
       {imageElement ? (
         <Image
           image={imageElement}
-          x={-radius}
-          y={-radius}
-          width={radius * 2}
-          height={radius * 2}
+          x={-(radius * 2 * NODE_ICON_RADIUS_PERCENT) / 2}
+          y={-(radius * 2 * NODE_ICON_RADIUS_PERCENT) / 2}
+          width={radius * 2 * NODE_ICON_RADIUS_PERCENT}
+          height={radius * 2 * NODE_ICON_RADIUS_PERCENT}
         />
       ) : null}
 
@@ -203,7 +204,7 @@ export const NodeElement = ({
         <Circle
           radius={radius}
           stroke={SELECTION_COLOR}
-          strokeWidth={4}
+          strokeWidth={6}
           fill="transparent"
           listening={false}
         />

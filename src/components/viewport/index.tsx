@@ -1,13 +1,14 @@
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Layer, Stage } from 'react-konva';
 
-import { MAX_ZOOM, MIN_ZOOM, VIEWPORT_BACKGROUND_COLOR, ZOOM_SPEED } from '@/constants';
+import { MAX_ZOOM, MIN_ZOOM, VIEWPORT_WORLD_SIZE, ZOOM_SPEED } from '@/constants';
 import { useStore } from '@/store';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
 
 import { BackgroundImage } from './background-image';
+import { BackgroundTexture } from './background-texture';
 import { ConnectionLine } from './connection-line';
 import { ContextMenu } from './context-menu';
 import { GridLayer } from './grid-layer';
@@ -62,7 +63,6 @@ export const Viewport = () => {
     gridSettings,
     selectElement,
     toggleElementSelection,
-    clearSelection,
     isElementSelected,
     addNode,
     addImage,
@@ -137,6 +137,20 @@ export const Viewport = () => {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
+  // Helper function to clamp viewport position within world bounds
+  const clampViewportPosition = (x: number, y: number, scale: number) => {
+    const halfWorld = VIEWPORT_WORLD_SIZE / 2;
+    const maxX = halfWorld * scale;
+    const minX = stageSize.width - halfWorld * scale;
+    const maxY = halfWorld * scale;
+    const minY = stageSize.height - halfWorld * scale;
+
+    return {
+      x: Math.max(minX, Math.min(maxX, x)),
+      y: Math.max(minY, Math.min(maxY, y)),
+    };
+  };
+
   // Handle zoom with mouse wheel
   const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
@@ -158,10 +172,13 @@ export const Viewport = () => {
 
     stage.scale({ x: newScale, y: newScale });
 
-    const newPos = {
+    let newPos = {
       x: pointer.x - mousePointTo.x * newScale,
       y: pointer.y - mousePointTo.y * newScale,
     };
+
+    // Clamp position within world bounds
+    newPos = clampViewportPosition(newPos.x, newPos.y, newScale);
 
     stage.position(newPos);
 
@@ -177,8 +194,13 @@ export const Viewport = () => {
     // Save viewport state after dragging
     const stage = stageRef.current;
     if (stage) {
-      const pos = stage.position();
+      let pos = stage.position();
       const scale = stage.scaleX();
+
+      // Clamp position within world bounds
+      pos = clampViewportPosition(pos.x, pos.y, scale);
+      stage.position(pos);
+
       updateViewport({
         x: pos.x,
         y: pos.y,
@@ -523,17 +545,19 @@ export const Viewport = () => {
   const isMultiSelectMode = selectedElements.size > 0;
 
   return (
-    <div
-      ref={containerRef}
-      className="size-full"
-      style={{ backgroundColor: VIEWPORT_BACKGROUND_COLOR }}
-    >
+    <div ref={containerRef} className="size-full">
       {stageSize.width > 0 && stageSize.height > 0 ? (
         <Stage
           ref={stageRef}
           width={stageSize.width}
           height={stageSize.height}
           draggable={!isDraggingElement}
+          dragBoundFunc={(pos) => {
+            const stage = stageRef.current;
+            if (!stage) return pos;
+            const scale = stage.scaleX();
+            return clampViewportPosition(pos.x, pos.y, scale);
+          }}
           onWheel={handleWheel}
           onDragEnd={handleDragEnd}
           onContextMenu={handleContextMenu}
@@ -541,7 +565,10 @@ export const Viewport = () => {
           onClick={handleStageClick}
         >
           <Layer>
-            {/* Grid - lowest z-index */}
+            {/* Background Texture - lowest z-index */}
+            <BackgroundTexture />
+
+            {/* Grid */}
             <GridLayer
               gridSize={gridSettings.size}
               enabled={gridSettings.enabled}
@@ -560,9 +587,9 @@ export const Viewport = () => {
                 isSelected={
                   isMultiSelectMode
                     ? isElementSelected(id)
-                    : selectedElement?.id === id
+                    : (selectedElement?.id === id
                       ? selectedElement?.type === 'image'
-                      : null
+                      : null)
                 }
                 onSelect={(e) => handleImageClick(id, e?.evt)}
                 onContextMenu={handleImageContextMenu}
@@ -685,9 +712,9 @@ export const Viewport = () => {
                 isSelected={
                   isMultiSelectMode
                     ? isElementSelected(id)
-                    : selectedElement?.id === id
+                    : (selectedElement?.id === id
                       ? selectedElement?.type === 'node'
-                      : null
+                      : null)
                 }
                 onSelect={(e) => handleNodeClick(id, e?.evt)}
                 onContextMenu={handleNodeContextMenu}
@@ -727,9 +754,9 @@ export const Viewport = () => {
                 isSelected={
                   isMultiSelectMode
                     ? isElementSelected(id)
-                    : selectedElement?.id === id
+                    : (selectedElement?.id === id
                       ? selectedElement?.type === 'orbit'
-                      : null
+                      : null)
                 }
                 onSelect={(e) => handleOrbitClick(id, e?.evt)}
                 onContextMenu={handleOrbitContextMenu}

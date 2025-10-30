@@ -52,7 +52,7 @@ export const WEB_DEFAULT_CONCENTRIC_CIRCLES = 4 as const;
 export const SELECTION_COLOR = '#4A9EFF' as const;
 
 // Connection Lines
-export const CONNECTION_COLOR_DEFAULT = '#242424' as const;
+export const CONNECTION_COLOR_DEFAULT = '#151515' as const;
 export const CONNECTION_COLOR_HOVER = '#241C13' as const;
 export const CONNECTION_COLOR_SELECTED = '#4A9EFF' as const;
 export const CONNECTION_BORDER_DEFAULT = '#4D4D4D' as const;

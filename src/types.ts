@@ -61,6 +61,15 @@ export type GridSettings = {
   rotation: number; // угол поворота в градусах (0-360)
 };
 
+export type WebSettings = {
+  enabled: boolean;
+  size: number; // размер паутины (радиус внешнего круга)
+  spokes: number; // количество лучей (3-24)
+  rotation: number; // поворот паутины в градусах (0-360)
+  innerRadius: number; // размер внутреннего пустого круга
+  concentricCircles: number; // количество концентрических окружностей (1-10)
+};
+
 export type PositionOrbit = {
   x: number; // центр орбиты
   y: number; // центр орбиты
@@ -78,6 +87,7 @@ export type EditorData = {
   connections?: EditorConnections;
   viewport?: ViewportState;
   gridSettings?: GridSettings;
+  webSettings?: WebSettings;
   globalSettingsExpanded?: boolean;
 };
 

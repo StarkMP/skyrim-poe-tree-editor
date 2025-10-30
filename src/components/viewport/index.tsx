@@ -15,6 +15,7 @@ import { GridLayer } from './grid-layer';
 import { NodeElement } from './node-element';
 import { OrbitElement } from './orbit-element';
 import { TempConnectionLine } from './temp-connection-line';
+import { WebLayer } from './web-layer';
 
 export const Viewport = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,6 +62,7 @@ export const Viewport = () => {
     viewportCenterRequest,
     viewport,
     gridSettings,
+    webSettings,
     selectElement,
     toggleElementSelection,
     isElementSelected,
@@ -567,6 +569,16 @@ export const Viewport = () => {
           <Layer>
             {/* Background Texture - lowest z-index */}
             <BackgroundTexture />
+
+            {/* Web Layer - above background, below grid */}
+            <WebLayer
+              enabled={webSettings.enabled}
+              size={webSettings.size}
+              spokes={webSettings.spokes}
+              rotation={webSettings.rotation}
+              innerRadius={webSettings.innerRadius}
+              concentricCircles={webSettings.concentricCircles}
+            />
 
             {/* Grid */}
             <GridLayer

@@ -31,6 +31,23 @@ export const VIEWPORT_WORLD_SIZE = 100_000 as const; // Размер миров�
 export const GRID_DOT_COLOR = 'rgba(255, 255, 255, 0.2)' as const;
 export const GRID_MIN_SCALE = 0.3 as const;
 
+// Web (Spider Web)
+export const WEB_COLOR = 'rgba(255, 255, 255, 0.15)' as const;
+export const WEB_LINE_WIDTH = 2 as const;
+export const WEB_MIN_SIZE = 2000 as const;
+export const WEB_MAX_SIZE = 16_000 as const;
+export const WEB_DEFAULT_SIZE = 500 as const;
+export const WEB_MIN_SPOKES = 3 as const;
+export const WEB_MAX_SPOKES = 24 as const;
+export const WEB_DEFAULT_SPOKES = 8 as const;
+export const WEB_DEFAULT_ROTATION = 0 as const;
+export const WEB_MIN_INNER_RADIUS = 100 as const;
+export const WEB_MAX_INNER_RADIUS = 3000 as const;
+export const WEB_DEFAULT_INNER_RADIUS = 100 as const;
+export const WEB_MIN_CONCENTRIC_CIRCLES = 1 as const;
+export const WEB_MAX_CONCENTRIC_CIRCLES = 10 as const;
+export const WEB_DEFAULT_CONCENTRIC_CIRCLES = 4 as const;
+
 // Selection (universal selection color)
 export const SELECTION_COLOR = '#4A9EFF' as const;
 

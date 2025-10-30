@@ -1,7 +1,16 @@
 import { nanoid } from 'nanoid';
 import { create } from 'zustand';
 
-import { ORBIT_DEFAULT_POINTS, ORBIT_DEFAULT_RADIUS, ORBIT_DEFAULT_ROTATION } from './constants';
+import {
+  ORBIT_DEFAULT_POINTS,
+  ORBIT_DEFAULT_RADIUS,
+  ORBIT_DEFAULT_ROTATION,
+  WEB_DEFAULT_CONCENTRIC_CIRCLES,
+  WEB_DEFAULT_INNER_RADIUS,
+  WEB_DEFAULT_ROTATION,
+  WEB_DEFAULT_SIZE,
+  WEB_DEFAULT_SPOKES,
+} from './constants';
 import gamePerksData from './data/game-perks.json';
 import {
   Connection,
@@ -17,6 +26,7 @@ import {
   NodeType,
   PositionOrbit,
   ViewportState,
+  WebSettings,
 } from './types';
 import { getSecretKey } from './utils/s3-credentials';
 
@@ -69,6 +79,7 @@ export type Store = {
   viewportCenterRequest: ViewportCenterRequest;
   viewport: ViewportState;
   gridSettings: GridSettings;
+  webSettings: WebSettings;
 
   // UI state
   globalSettingsExpanded: boolean;
@@ -124,6 +135,9 @@ export type Store = {
 
   // Grid settings
   updateGridSettings: (settings: Partial<GridSettings>) => void;
+
+  // Web settings
+  updateWebSettings: (settings: Partial<WebSettings>) => void;
 
   // UI state
   setGlobalSettingsExpanded: (expanded: boolean) => void;
@@ -192,6 +206,14 @@ const pushUndoAction = (state: Store, action: UndoAction) => {
 // Default values for initial state
 const DEFAULT_VIEWPORT: ViewportState = { x: 0, y: 0, scale: 1 };
 const DEFAULT_GRID_SETTINGS: GridSettings = { enabled: false, size: 100, rotation: 0 };
+const DEFAULT_WEB_SETTINGS: WebSettings = {
+  enabled: false,
+  size: WEB_DEFAULT_SIZE,
+  spokes: WEB_DEFAULT_SPOKES,
+  rotation: WEB_DEFAULT_ROTATION,
+  innerRadius: WEB_DEFAULT_INNER_RADIUS,
+  concentricCircles: WEB_DEFAULT_CONCENTRIC_CIRCLES,
+};
 
 // Helper to load initial data from localStorage
 const loadInitialData = () => {
@@ -202,6 +224,7 @@ const loadInitialData = () => {
     connections: {},
     viewport: DEFAULT_VIEWPORT,
     gridSettings: DEFAULT_GRID_SETTINGS,
+    webSettings: DEFAULT_WEB_SETTINGS,
     globalSettingsExpanded: true,
   };
 
@@ -218,6 +241,7 @@ const loadInitialData = () => {
       connections: data.connections || defaults.connections,
       viewport: data.viewport || defaults.viewport,
       gridSettings: data.gridSettings || defaults.gridSettings,
+      webSettings: data.webSettings || defaults.webSettings,
       globalSettingsExpanded: data.globalSettingsExpanded ?? defaults.globalSettingsExpanded,
     };
   } catch (error) {
@@ -245,6 +269,7 @@ export const useStore = create<Store>((set, get) => {
     viewportCenterRequest: null,
     viewport: initialData.viewport,
     gridSettings: initialData.gridSettings,
+    webSettings: initialData.webSettings,
     globalSettingsExpanded: initialData.globalSettingsExpanded,
     s3SecretKey: storedSecretKey,
     isS3KeyValid: !!storedSecretKey,
@@ -627,6 +652,14 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
+    // Web settings
+    updateWebSettings: (settings: Partial<WebSettings>) => {
+      set((state) => ({
+        webSettings: { ...state.webSettings, ...settings },
+      }));
+      get().saveToLocalStorage();
+    },
+
     // UI state
     setGlobalSettingsExpanded: (expanded: boolean) => {
       set({ globalSettingsExpanded: expanded });
@@ -890,6 +923,7 @@ export const useStore = create<Store>((set, get) => {
         connections: state.connections,
         viewport: state.viewport,
         gridSettings: state.gridSettings,
+        webSettings: state.webSettings,
         globalSettingsExpanded: state.globalSettingsExpanded,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -904,6 +938,7 @@ export const useStore = create<Store>((set, get) => {
         connections: data.connections,
         viewport: data.viewport,
         gridSettings: data.gridSettings,
+        webSettings: data.webSettings,
         globalSettingsExpanded: data.globalSettingsExpanded,
         selectedElements: new Set(),
         multiSelectedElementsData: new Map(),

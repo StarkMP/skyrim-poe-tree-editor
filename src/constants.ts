@@ -55,7 +55,7 @@ export const SELECTION_COLOR = '#4A9EFF' as const;
 export const CONNECTION_COLOR_DEFAULT = '#151515' as const;
 export const CONNECTION_COLOR_HOVER = '#241C13' as const;
 export const CONNECTION_COLOR_SELECTED = '#4A9EFF' as const;
-export const CONNECTION_BORDER_DEFAULT = '#4D4D4D' as const;
+export const CONNECTION_BORDER_DEFAULT = '#2D2D2D' as const;
 export const CONNECTION_BORDER_SELECTED = '#3E3A2F' as const;
 export const CONNECTION_TEMP_COLOR = '#4A9EFF' as const;
 

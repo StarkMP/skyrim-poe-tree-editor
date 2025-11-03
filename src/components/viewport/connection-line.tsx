@@ -104,7 +104,7 @@ export const ConnectionLine = ({
       <Line
         points={curvePoints}
         stroke={getBorderColor()}
-        strokeWidth={isSelected === true ? 10 : 8}
+        strokeWidth={isSelected === true ? 7 : 5}
         tension={0}
         listening={false}
       />
@@ -113,7 +113,7 @@ export const ConnectionLine = ({
       <Line
         points={curvePoints}
         stroke={getLineColor()}
-        strokeWidth={isSelected === true ? 6 : 4}
+        strokeWidth={isSelected === true ? 5 : 3}
         tension={0}
         listening={false}
       />

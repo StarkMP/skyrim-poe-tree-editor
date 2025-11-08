@@ -45,7 +45,7 @@ export const WEB_MIN_INNER_RADIUS = 100 as const;
 export const WEB_MAX_INNER_RADIUS = 3000 as const;
 export const WEB_DEFAULT_INNER_RADIUS = 100 as const;
 export const WEB_MIN_CONCENTRIC_CIRCLES = 1 as const;
-export const WEB_MAX_CONCENTRIC_CIRCLES = 10 as const;
+export const WEB_MAX_CONCENTRIC_CIRCLES = 20 as const;
 export const WEB_DEFAULT_CONCENTRIC_CIRCLES = 4 as const;
 
 // Selection (universal selection color)

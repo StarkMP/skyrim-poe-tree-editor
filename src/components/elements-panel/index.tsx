@@ -1,5 +1,6 @@
 import { Hexagon, Image, Orbit, Search, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import List from 'rc-virtual-list';
+import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ export const ElementsPanel = () => {
     deleteOrbit,
     requestCenterOnElement,
   } = useStore();
+  const parentRef = useRef<HTMLDivElement | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -88,14 +90,20 @@ export const ElementsPanel = () => {
           />
         </div>
 
-        <div className="size-full relative overflow-y-auto">
-          <div className="size-full absolute left-0 top-0 flex flex-col gap-1 p-2 pt-0">
-            {filteredElements.length === 0 ? (
-              <div className="text-xs text-muted-foreground text-center py-4">
-                {elements.length === 0 ? 'Нет элементов' : 'Ничего не найдено'}
-              </div>
-            ) : (
-              filteredElements.map((element) => (
+        <div ref={parentRef} className="size-full relative">
+          {filteredElements.length === 0 ? (
+            <div className="text-xs text-muted-foreground text-center py-4">
+              {elements.length === 0 ? 'Нет элементов' : 'Ничего не найдено'}
+            </div>
+          ) : (
+            <List
+              data={filteredElements}
+              height={window.innerHeight - 81}
+              itemHeight={40}
+              itemKey="id"
+              className="size-full flex flex-col gap-1 p-2 pt-0"
+            >
+              {(element) => (
                 <div
                   key={element.id}
                   className={`flex w-full items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
@@ -141,9 +149,9 @@ export const ElementsPanel = () => {
                     </Button>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              )}
+            </List>
+          )}
         </div>
       </div>
     </TooltipProvider>

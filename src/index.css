@@ -102,3 +102,11 @@
 *::-webkit-scrollbar-thumb:hover {
   background-color: rgba(150, 150, 150, 0.7);
 }
+
+.rc-virtual-list-scrollbar-thumb {
+  background-color: rgba(128, 128, 128, 0.5) !important;
+}
+
+.rc-virtual-list-scrollbar-thumb:hover {
+  background-color: rgba(150, 150, 150, 0.7) !important;
+}

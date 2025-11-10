@@ -74,6 +74,7 @@
     "lucide-react": "^0.546.0",
     "motion": "12.23.24",
     "nanoid": "^5.1.6",
+    "rc-virtual-list": "^3.19.2",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-konva": "^19.0.10",

@@ -15,10 +15,10 @@ export const MAX_ZOOM = 1.2 as const;
 
 // Orbit
 export const ORBIT_MIN_RADIUS = 50 as const;
-export const ORBIT_MAX_RADIUS = 500 as const;
+export const ORBIT_MAX_RADIUS = 5000 as const;
 export const ORBIT_DEFAULT_RADIUS = 150 as const;
 export const ORBIT_MIN_POINTS = 3 as const;
-export const ORBIT_MAX_POINTS = 18 as const;
+export const ORBIT_MAX_POINTS = 100 as const;
 export const ORBIT_DEFAULT_POINTS = 8 as const;
 export const ORBIT_DEFAULT_ROTATION = 0 as const;
 export const ORBIT_SNAP_THRESHOLD = 30 as const;

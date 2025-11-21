@@ -38,7 +38,6 @@ export const snapToRotatedGrid = (
   gridSize: number,
   rotation: number
 ): { x: number; y: number } => {
-  // Если поворот 0, используем обычное выравнивание
   if (rotation === 0) {
     return {
       x: snapToGrid(x, gridSize),
@@ -46,16 +45,13 @@ export const snapToRotatedGrid = (
     };
   }
 
-  // 1. Поворачиваем точку в обратную сторону
   const rotated = rotatePoint(x, y, -rotation);
 
-  // 2. Выравниваем по обычной сетке
   const snapped = {
     x: snapToGrid(rotated.x, gridSize),
     y: snapToGrid(rotated.y, gridSize),
   };
 
-  // 3. Поворачиваем обратно
   return rotatePoint(snapped.x, snapped.y, rotation);
 };
 

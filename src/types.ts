@@ -18,7 +18,7 @@ type NodeUID = string;
 export type EditorNode = {
   type: NodeType;
   perkId: string;
-  iconUrl?: string; // опционально - можно экспортировать без иконки
+  iconUrl?: string;
   title: string;
   description: string;
   reqDescription: string;
@@ -32,7 +32,7 @@ export type EditorNodes = { [uid: NodeUID]: EditorNode };
 export type Connection = {
   fromId: string;
   toId: string;
-  curvature: number; // -100 до 100, где 0 = прямая линия
+  curvature: number;
 };
 
 export type EditorConnections = { [uid: string]: Connection };
@@ -43,8 +43,8 @@ export type EditorImage = {
   x: number;
   y: number;
   imageUrl: string;
-  opacity?: number; // 0-1, default 1
-  rotation?: number; // degrees, default 0
+  opacity?: number;
+  rotation?: number;
 };
 
 export type EditorImages = { [uid: string]: EditorImage };
@@ -57,25 +57,25 @@ export type ViewportState = {
 
 export type GridSettings = {
   enabled: boolean;
-  size: number; // размер ячейки сетки (20-200)
-  rotation: number; // угол поворота в градусах (0-360)
+  size: number;
+  rotation: number;
 };
 
 export type WebSettings = {
   enabled: boolean;
-  size: number; // размер паутины (радиус внешнего круга)
-  spokes: number; // количество лучей (3-24)
-  rotation: number; // поворот паутины в градусах (0-360)
-  innerRadius: number; // размер внутреннего пустого круга
-  concentricCircles: number; // количество концентрических окружностей (1-10)
+  size: number;
+  spokes: number;
+  rotation: number;
+  innerRadius: number;
+  concentricCircles: number;
 };
 
 export type PositionOrbit = {
-  x: number; // центр орбиты
-  y: number; // центр орбиты
-  radius: number; // радиус орбиты (расстояние до точек)
-  pointCount: number; // количество точек на орбите (4-16)
-  rotation?: number; // поворот орбиты в градусах (0-360), по умолчанию 0
+  x: number;
+  y: number;
+  radius: number;
+  pointCount: number;
+  rotation?: number;
 };
 
 export type EditorOrbits = { [uid: string]: PositionOrbit };

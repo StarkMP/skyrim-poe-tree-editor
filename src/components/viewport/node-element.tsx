@@ -13,7 +13,6 @@ import { snapToRotatedGrid } from '@/utils/grid-helpers';
 import { getNodeRadius } from '@/utils/node-helpers';
 import { findClosestOrbitSnapPoint } from '@/utils/orbit-helpers';
 
-// Border images for each node type
 const nodeBorderImages: Record<NodeType, string> = {
   [NodeType.SmallNode]: smallNodeBorder,
   [NodeType.LargeNode]: largeNodeBorder,
@@ -49,11 +48,9 @@ export const NodeElement = ({
   const [borderImage] = useImage(nodeBorderImages[node.type], 'anonymous');
   const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
 
-  // Border size slightly larger than node
   const borderScale = 1.15;
   const borderSize = radius * 2 * borderScale;
 
-  // Create circular clipped image
   useEffect(() => {
     if (!image) {
       setImageElement(null);
@@ -68,17 +65,14 @@ export const NodeElement = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Create circular clip
     const imageRadius = size / 2;
     ctx.beginPath();
     ctx.arc(imageRadius, imageRadius, imageRadius, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
 
-    // Draw image
     ctx.drawImage(image, 0, 0, size, size);
 
-    // Convert to image element using toBlob (more efficient)
     canvas.toBlob((blob) => {
       if (!blob) return;
 
@@ -87,7 +81,7 @@ export const NodeElement = ({
       img.src = url;
       img.onload = () => {
         setImageElement(img);
-        // Clean up the object URL after image is loaded
+
         URL.revokeObjectURL(url);
       };
     });
@@ -96,15 +90,12 @@ export const NodeElement = ({
   const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
     const currentPos = { x: e.target.x(), y: e.target.y() };
 
-    // Приоритет 1: Проверяем снаппинг к орбитам
     const orbitSnapPoint = findClosestOrbitSnapPoint(currentPos, orbits);
 
     if (orbitSnapPoint) {
-      // Снаппинг к орбите
       e.target.position(orbitSnapPoint);
       onDragMove(orbitSnapPoint);
     } else if (gridSettings.enabled) {
-      // Приоритет 2: Снаппинг к сетке (если орбиты не найдены)
       const snapped = snapToRotatedGrid(
         currentPos.x,
         currentPos.y,
@@ -114,7 +105,6 @@ export const NodeElement = ({
       e.target.position(snapped);
       onDragMove(snapped);
     } else {
-      // Без снаппинга
       onDragMove(currentPos);
     }
   };
@@ -122,18 +112,15 @@ export const NodeElement = ({
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
     const currentPos = { x: e.target.x(), y: e.target.y() };
 
-    // Приоритет 1: Проверяем снаппинг к орбитам
     const orbitSnapPoint = findClosestOrbitSnapPoint(currentPos, orbits);
 
     let finalX: number;
     let finalY: number;
 
     if (orbitSnapPoint) {
-      // Снаппинг к орбите
       finalX = orbitSnapPoint.x;
       finalY = orbitSnapPoint.y;
     } else if (gridSettings.enabled) {
-      // Приоритет 2: Снаппинг к сетке
       const snapped = snapToRotatedGrid(
         currentPos.x,
         currentPos.y,
@@ -143,7 +130,6 @@ export const NodeElement = ({
       finalX = snapped.x;
       finalY = snapped.y;
     } else {
-      // Без снаппинга
       finalX = currentPos.x;
       finalY = currentPos.y;
     }

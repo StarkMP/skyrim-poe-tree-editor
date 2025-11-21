@@ -80,7 +80,6 @@ export const VirtualizedCombobox = ({
 
   const handleSearch = React.useCallback(
     (search: string) => {
-      // Ignore the first empty call from CommandInput mount
       if (!isInitializedRef.current && search === '') {
         isInitializedRef.current = true;
         return;
@@ -138,27 +137,24 @@ export const VirtualizedCombobox = ({
     [filteredOptions, focusedIndex, onValueChange, scrollToIndex]
   );
 
-  // Initialize and reset filtered options when options change or popup opens
   React.useEffect(() => {
     if (open) {
       setFilteredOptions(options);
       setSearchValue('');
       isInitializedRef.current = false;
 
-      // Force virtualizer to recalculate after options are set
       setTimeout(() => {
         virtualizer.measure();
       }, 200);
     }
   }, [options, open, virtualizer]);
 
-  // Scroll to selected option when opening
   React.useEffect(() => {
     if (open && value) {
       const index = filteredOptions.findIndex((option) => option.value === value);
       if (index !== -1) {
         setFocusedIndex(index);
-        // Small delay to ensure virtualizer is ready
+
         setTimeout(() => scrollToIndex(index), 0);
       }
     }

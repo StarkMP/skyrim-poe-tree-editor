@@ -9,13 +9,10 @@ import { EditorOrbits, PositionOrbit } from '@/types';
 export const getOrbitPoints = (orbit: PositionOrbit): Array<{ x: number; y: number }> => {
   const points: Array<{ x: number; y: number }> = [];
 
-  // Центральная точка
   points.push({ x: orbit.x, y: orbit.y });
 
-  // Поворот орбиты в радианах
   const rotationRad = ((orbit.rotation || 0) * Math.PI) / 180;
 
-  // Точки на орбите (равномерно распределенные с учетом поворота)
   const angleStep = (2 * Math.PI) / orbit.pointCount;
 
   for (let i = 0; i < orbit.pointCount; i++) {

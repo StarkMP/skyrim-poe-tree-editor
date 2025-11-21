@@ -6,8 +6,8 @@ import { getNodeRadius } from './node-helpers';
 export type AtlasNode = {
   uid: string;
   type: NodeType;
-  iconUrl?: string; // опционально - для нод без иконки
-  iconImage: HTMLImageElement | null; // null если нет иконки
+  iconUrl?: string;
+  iconImage: HTMLImageElement | null;
   borderImage: HTMLImageElement;
 };
 
@@ -62,10 +62,8 @@ export function packTextureAtlas(
 ): TextureAtlasResult {
   const rects = new Map<string, AtlasRect>();
 
-  // Группируем ноды по типу (размеру)
   const groups = groupNodesByType(nodes);
 
-  // Сортируем группы по размеру (от большего к меньшему)
   const sortedTypes = Array.from(groups.keys()).toSorted(
     (a, b) => getNodeAtlasSize(b) - getNodeAtlasSize(a)
   );
@@ -73,18 +71,14 @@ export function packTextureAtlas(
   let currentY = padding;
   let actualMaxWidth = 0;
 
-  // Упаковываем каждую группу с учетом максимальной ширины (flex-wrap)
   for (const type of sortedTypes) {
     const groupNodes = groups.get(type)!;
     const nodeSize = getNodeAtlasSize(type);
 
     let currentX = padding;
 
-    // Размещаем ноды в текущей группе с переносом на новую строку
     for (const node of groupNodes) {
-      // Проверяем, поместится ли нода в текущую строку
       if (currentX + nodeSize > maxWidth && currentX > padding) {
-        // Переносим на новую строку
         currentX = padding;
         currentY += nodeSize + padding;
       }
@@ -101,15 +95,12 @@ export function packTextureAtlas(
       actualMaxWidth = Math.max(actualMaxWidth, currentX);
     }
 
-    // Переходим к следующей группе (новый ряд)
     currentY += nodeSize + padding;
   }
 
-  // Итоговые размеры атласа
   const atlasWidth = Math.min(actualMaxWidth, maxWidth);
   const atlasHeight = currentY;
 
-  // Создаем canvas для атласа
   const canvas = document.createElement('canvas');
   canvas.width = atlasWidth;
   canvas.height = atlasHeight;
@@ -119,18 +110,15 @@ export function packTextureAtlas(
     throw new Error('Failed to get canvas context');
   }
 
-  // Рисуем каждую ноду в атласе
   for (const node of nodes) {
     const rect = rects.get(node.uid)!;
     const radius = getNodeRadius(node.type);
     const centerX = rect.x + rect.width / 2;
     const centerY = rect.y + rect.height / 2;
 
-    // Рисуем иконку с круглой маской (если есть иконка)
     if (node.iconImage) {
       ctx.save();
 
-      // Применяем NODE_ICON_SIZE_PERCENT для размера иконки
       const iconRadius = radius * NODE_ICON_SIZE_PERCENT;
 
       ctx.beginPath();
@@ -147,7 +135,6 @@ export function packTextureAtlas(
       ctx.restore();
     }
 
-    // Рисуем бордер поверх иконки (или просто бордер, если иконки нет)
     ctx.drawImage(node.borderImage, rect.x, rect.y, rect.width, rect.height);
   }
 

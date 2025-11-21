@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 export type ComboboxOption = {
   value: string;
   label: string;
-  searchText?: string; // Optional additional text for search
+  searchText?: string;
 };
 
 type ComboboxProps = {

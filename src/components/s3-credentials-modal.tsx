@@ -42,11 +42,10 @@ export const S3CredentialsModal = ({
       const isValid = await validateSecretKey(secretKey.trim());
 
       if (isValid) {
-        // Save to localStorage
         saveSecretKey(secretKey.trim());
-        // Notify parent component
+
         onSuccess(secretKey.trim());
-        // Reset form
+
         setSecretKey('');
       } else {
         setError('Неверный ключ доступа. Проверьте правильность ввода.');

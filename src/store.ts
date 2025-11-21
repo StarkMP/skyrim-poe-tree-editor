@@ -49,7 +49,6 @@ type ViewportCenterRequest = {
   timestamp: number;
 } | null;
 
-// Undo action types - each represents a reversible operation
 type UndoAction =
   | { type: 'ADD_NODE'; nodeId: string }
   | { type: 'DELETE_NODE'; nodeId: string; nodeData: EditorNode }
@@ -66,32 +65,27 @@ type UndoAction =
   | { type: 'UPDATE_ORBIT'; orbitId: string; previousData: Partial<PositionOrbit> };
 
 export type Store = {
-  // Data
   nodes: EditorNodes;
   images: EditorImages;
   orbits: EditorOrbits;
   connections: EditorConnections;
   gamePerks: GamePerksData;
-  gamePerkIdsSet: Set<string>; // Cached set for O(1) validation
+  gamePerkIdsSet: Set<string>;
   selectedElement: SelectedElement;
-  selectedElements: Set<string>; // IDs of multiple selected elements
-  multiSelectedElementsData: Map<string, MultiSelectedElement>; // Full data for multi-selected elements
+  selectedElements: Set<string>;
+  multiSelectedElementsData: Map<string, MultiSelectedElement>;
   viewportCenterRequest: ViewportCenterRequest;
   viewport: ViewportState;
   gridSettings: GridSettings;
   webSettings: WebSettings;
 
-  // UI state
   globalSettingsExpanded: boolean;
 
-  // S3 credentials
   s3SecretKey: string | null;
   isS3KeyValid: boolean;
 
-  // Undo stack
   undoStack: UndoAction[];
 
-  // Node operations
   addNode: (x: number, y: number) => string;
   updateNode: (id: string, updates: Partial<EditorNode>) => void;
   deleteNode: (id: string) => void;
@@ -100,17 +94,14 @@ export type Store = {
   updateConnection: (id: string, updates: Partial<Connection>) => void;
   removeAllConnections: (nodeId: string) => void;
 
-  // Image operations
   addImage: (x: number, y: number) => string;
   updateImage: (id: string, updates: Partial<EditorImage>) => void;
   deleteImage: (id: string) => void;
 
-  // Orbit operations
   addOrbit: (x: number, y: number) => string;
   updateOrbit: (id: string, updates: Partial<PositionOrbit>) => void;
   deleteOrbit: (id: string) => void;
 
-  // Selection
   selectElement: (
     id: string | null,
     type: 'node' | 'image' | 'orbit' | 'connection' | null
@@ -119,7 +110,6 @@ export type Store = {
   clearSelection: () => void;
   isElementSelected: (id: string) => boolean;
 
-  // Multi-element operations
   updateMultipleElements: (
     updates: Array<{
       id: string;
@@ -128,35 +118,27 @@ export type Store = {
     }>
   ) => void;
 
-  // Viewport
   requestCenterOnElement: (id: string, type: 'node' | 'image' | 'orbit') => void;
   clearCenterRequest: () => void;
   updateViewport: (viewport: ViewportState) => void;
 
-  // Grid settings
   updateGridSettings: (settings: Partial<GridSettings>) => void;
 
-  // Web settings
   updateWebSettings: (settings: Partial<WebSettings>) => void;
 
-  // UI state
   setGlobalSettingsExpanded: (expanded: boolean) => void;
 
-  // S3 credentials
   setS3SecretKey: (key: string) => void;
   clearS3SecretKey: () => void;
   getS3SecretKey: () => string | null;
 
-  // Undo operation
   undo: () => void;
   canUndo: () => boolean;
 
-  // Import/Export
   importData: (data: EditorData) => void;
   exportData: () => EditorData;
   clearAll: () => void;
 
-  // Persistence
   saveToLocalStorage: () => void;
   loadFromLocalStorage: () => void;
 };
@@ -191,11 +173,9 @@ const createDefaultOrbit = (x: number, y: number): PositionOrbit => ({
   rotation: ORBIT_DEFAULT_ROTATION,
 });
 
-// Helper to add action to undo stack
 const pushUndoAction = (state: Store, action: UndoAction) => {
   const newStack = [...state.undoStack, action];
 
-  // Limit stack size
   if (newStack.length > MAX_UNDO_STACK_SIZE) {
     newStack.shift();
   }
@@ -203,7 +183,6 @@ const pushUndoAction = (state: Store, action: UndoAction) => {
   return { undoStack: newStack };
 };
 
-// Default values for initial state
 const DEFAULT_VIEWPORT: ViewportState = { x: 0, y: 0, scale: 1 };
 const DEFAULT_GRID_SETTINGS: GridSettings = { enabled: false, size: 100, rotation: 0 };
 const DEFAULT_WEB_SETTINGS: WebSettings = {
@@ -215,7 +194,6 @@ const DEFAULT_WEB_SETTINGS: WebSettings = {
   concentricCircles: WEB_DEFAULT_CONCENTRIC_CIRCLES,
 };
 
-// Helper to load initial data from localStorage
 const loadInitialData = () => {
   const defaults = {
     nodes: {},
@@ -256,7 +234,6 @@ export const useStore = create<Store>((set, get) => {
   const storedSecretKey = getSecretKey();
 
   return {
-    // Initial state
     nodes: initialData.nodes,
     images: initialData.images,
     orbits: initialData.orbits,
@@ -275,7 +252,6 @@ export const useStore = create<Store>((set, get) => {
     isS3KeyValid: !!storedSecretKey,
     undoStack: [],
 
-    // Node operations
     addNode: (x: number, y: number) => {
       const id = nanoid();
       set((state) => ({
@@ -294,7 +270,6 @@ export const useStore = create<Store>((set, get) => {
         const currentNode = state.nodes[id];
         if (!currentNode) return state;
 
-        // Save only the fields that are being updated
         const previousData: Partial<EditorNode> = {};
         for (const key of Object.keys(updates) as Array<keyof EditorNode>) {
           previousData[key] = currentNode[key] as any;
@@ -319,7 +294,6 @@ export const useStore = create<Store>((set, get) => {
         const newNodes = { ...state.nodes };
         delete newNodes[id];
 
-        // Remove all connections to/from this node
         const newConnections = { ...state.connections };
         for (const [connId, conn] of Object.entries(newConnections)) {
           if (conn.fromId === id || conn.toId === id) {
@@ -344,7 +318,6 @@ export const useStore = create<Store>((set, get) => {
 
         if (!fromNode || !toNode) return state;
 
-        // Check if connection already exists
         const existingConnection = Object.values(state.connections).find(
           (conn) =>
             (conn.fromId === fromId && conn.toId === toId) ||
@@ -397,7 +370,6 @@ export const useStore = create<Store>((set, get) => {
         const currentConnection = state.connections[id];
         if (!currentConnection) return state;
 
-        // Save only the fields that are being updated
         const previousData: Partial<Connection> = {};
         for (const key of Object.keys(updates) as Array<keyof Connection>) {
           previousData[key] = currentConnection[key] as any;
@@ -419,7 +391,6 @@ export const useStore = create<Store>((set, get) => {
         const node = state.nodes[nodeId];
         if (!node) return state;
 
-        // Find all connections involving this node
         const connectionsToRemove: string[] = [];
         const newConnections = { ...state.connections };
 
@@ -442,7 +413,6 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
-    // Image operations
     addImage: (x: number, y: number) => {
       const id = nanoid();
       set((state) => ({
@@ -461,7 +431,6 @@ export const useStore = create<Store>((set, get) => {
         const currentImage = state.images[id];
         if (!currentImage) return state;
 
-        // Save only the fields that are being updated
         const previousData: Partial<EditorImage> = {};
         for (const key of Object.keys(updates) as Array<keyof EditorImage>) {
           previousData[key] = currentImage[key] as any;
@@ -495,7 +464,6 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
-    // Orbit operations
     addOrbit: (x: number, y: number) => {
       const id = nanoid();
       set((state) => ({
@@ -514,7 +482,6 @@ export const useStore = create<Store>((set, get) => {
         const currentOrbit = state.orbits[id];
         if (!currentOrbit) return state;
 
-        // Save only the fields that are being updated
         const previousData: Partial<PositionOrbit> = {};
         for (const key of Object.keys(updates) as Array<keyof PositionOrbit>) {
           previousData[key] = currentOrbit[key] as any;
@@ -548,7 +515,6 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
-    // Selection
     selectElement: (id: string | null, type: 'node' | 'image' | 'orbit' | 'connection' | null) => {
       set({
         selectedElement: id && type ? { id, type } : null,
@@ -563,17 +529,15 @@ export const useStore = create<Store>((set, get) => {
         const newMultiSelectedElementsData = new Map(state.multiSelectedElementsData);
 
         if (newSelectedElements.has(id)) {
-          // Remove from selection
           newSelectedElements.delete(id);
           newMultiSelectedElementsData.delete(id);
         } else {
-          // Add to selection
           newSelectedElements.add(id);
           newMultiSelectedElementsData.set(id, { id, type });
         }
 
         return {
-          selectedElement: null, // Clear single selection when multi-selecting
+          selectedElement: null,
           selectedElements: newSelectedElements,
           multiSelectedElementsData: newMultiSelectedElementsData,
         };
@@ -593,7 +557,6 @@ export const useStore = create<Store>((set, get) => {
       return state.selectedElements.has(id) || state.selectedElement?.id === id;
     },
 
-    // Multi-element operations
     updateMultipleElements: (
       updates: Array<{
         id: string;
@@ -628,7 +591,6 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
-    // Viewport
     requestCenterOnElement: (id: string, type: 'node' | 'image' | 'orbit') => {
       set({
         viewportCenterRequest: { id, type, timestamp: Date.now() },
@@ -644,7 +606,6 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
-    // Grid settings
     updateGridSettings: (settings: Partial<GridSettings>) => {
       set((state) => ({
         gridSettings: { ...state.gridSettings, ...settings },
@@ -652,7 +613,6 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
-    // Web settings
     updateWebSettings: (settings: Partial<WebSettings>) => {
       set((state) => ({
         webSettings: { ...state.webSettings, ...settings },
@@ -660,13 +620,11 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
-    // UI state
     setGlobalSettingsExpanded: (expanded: boolean) => {
       set({ globalSettingsExpanded: expanded });
       get().saveToLocalStorage();
     },
 
-    // S3 credentials
     setS3SecretKey: (key: string) => {
       set({ s3SecretKey: key, isS3KeyValid: true });
     },
@@ -677,7 +635,6 @@ export const useStore = create<Store>((set, get) => {
 
     getS3SecretKey: () => get().s3SecretKey,
 
-    // Undo operation
     undo: () => {
       const state = get();
       if (state.undoStack.length === 0) return;
@@ -689,14 +646,11 @@ export const useStore = create<Store>((set, get) => {
 
       set({ undoStack: newStack });
 
-      // Execute reverse operation based on action type
       switch (action.type) {
         case 'ADD_NODE': {
-          // Reverse: delete the node
           const newNodes = { ...state.nodes };
           delete newNodes[action.nodeId];
 
-          // Remove all connections to/from this node
           const newConnections = { ...state.connections };
           for (const [connId, conn] of Object.entries(newConnections)) {
             if (conn.fromId === action.nodeId || conn.toId === action.nodeId) {
@@ -714,7 +668,6 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'DELETE_NODE': {
-          // Reverse: restore the node
           set({
             nodes: {
               ...state.nodes,
@@ -725,7 +678,6 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'UPDATE_NODE': {
-          // Reverse: restore previous values
           const currentNode = state.nodes[action.nodeId];
           if (currentNode) {
             set({
@@ -739,7 +691,6 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'ADD_CONNECTION': {
-          // Reverse: remove the connection
           const newConnections = { ...state.connections };
           delete newConnections[action.connectionId];
 
@@ -752,7 +703,6 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'REMOVE_CONNECTION': {
-          // Reverse: restore the connection
           set({
             connections: {
               ...state.connections,
@@ -763,7 +713,6 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'UPDATE_CONNECTION': {
-          // Reverse: restore previous values
           const currentConnection = state.connections[action.connectionId];
           if (currentConnection) {
             set({
@@ -777,16 +726,10 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'REMOVE_ALL_CONNECTIONS': {
-          // Reverse: restore all connections
-          // The connections array in the action contains connection IDs that were removed
-          // We need to restore them from somewhere - but we don't have the connection data
-          // This is a limitation of the current undo system
-          // For now, we'll just skip this case as it's rarely used
           break;
         }
 
         case 'ADD_IMAGE': {
-          // Reverse: delete the image
           const newImages = { ...state.images };
           delete newImages[action.imageId];
           set({
@@ -798,7 +741,6 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'DELETE_IMAGE': {
-          // Reverse: restore the image
           set({
             images: {
               ...state.images,
@@ -809,7 +751,6 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'UPDATE_IMAGE': {
-          // Reverse: restore previous values
           const currentImage = state.images[action.imageId];
           if (currentImage) {
             set({
@@ -823,7 +764,6 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'ADD_ORBIT': {
-          // Reverse: delete the orbit
           const newOrbits = { ...state.orbits };
           delete newOrbits[action.orbitId];
           set({
@@ -835,7 +775,6 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'DELETE_ORBIT': {
-          // Reverse: restore the orbit
           set({
             orbits: {
               ...state.orbits,
@@ -846,7 +785,6 @@ export const useStore = create<Store>((set, get) => {
         }
 
         case 'UPDATE_ORBIT': {
-          // Reverse: restore previous values
           const currentOrbit = state.orbits[action.orbitId];
           if (currentOrbit) {
             set({
@@ -868,7 +806,6 @@ export const useStore = create<Store>((set, get) => {
       return state.undoStack.length > 0;
     },
 
-    // Import/Export
     importData: (data: EditorData) => {
       set({
         nodes: data.nodes,
@@ -880,7 +817,7 @@ export const useStore = create<Store>((set, get) => {
         selectedElement: null,
         selectedElements: new Set(),
         multiSelectedElementsData: new Map(),
-        undoStack: [], // Clear undo stack on import
+        undoStack: [],
       });
       get().saveToLocalStorage();
     },
@@ -908,12 +845,11 @@ export const useStore = create<Store>((set, get) => {
         selectedElement: null,
         selectedElements: new Set(),
         multiSelectedElementsData: new Map(),
-        undoStack: [], // Clear undo stack
+        undoStack: [],
       });
       localStorage.removeItem(STORAGE_KEY);
     },
 
-    // Persistence
     saveToLocalStorage: () => {
       const state = get();
       const data: EditorData = {
@@ -942,7 +878,7 @@ export const useStore = create<Store>((set, get) => {
         globalSettingsExpanded: data.globalSettingsExpanded,
         selectedElements: new Set(),
         multiSelectedElementsData: new Map(),
-        undoStack: [], // Start with empty undo stack
+        undoStack: [],
       });
     },
   };

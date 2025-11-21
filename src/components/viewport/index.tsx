@@ -44,7 +44,6 @@ export const Viewport = () => {
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [draggingNodePos, setDraggingNodePos] = useState<{ x: number; y: number } | null>(null);
 
-  // Multi-selection dragging state
   const [multiDragStartPositions, setMultiDragStartPositions] = useState<
     Map<string, { x: number; y: number }>
   >(new Map());
@@ -79,7 +78,6 @@ export const Viewport = () => {
     clearCenterRequest,
   } = useStore();
 
-  // Apply saved viewport state
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage || !viewport) return;
@@ -89,7 +87,6 @@ export const Viewport = () => {
     stage.batchDraw();
   }, [viewport, stageSize]);
 
-  // Handle viewport centering requests
   useEffect(() => {
     if (!viewportCenterRequest || !stageRef.current) return;
 
@@ -119,11 +116,9 @@ export const Viewport = () => {
     stage.position({ x: newX, y: newY });
     stage.batchDraw();
 
-    // Clear the request after execution to prevent re-triggering
     clearCenterRequest();
   }, [viewportCenterRequest?.timestamp, nodes, images, orbits, stageSize, clearCenterRequest]);
 
-  // Set initial size and handle resize
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
@@ -139,7 +134,6 @@ export const Viewport = () => {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // Helper function to clamp viewport position within world bounds
   const clampViewportPosition = (x: number, y: number, scale: number) => {
     const halfWorld = VIEWPORT_WORLD_SIZE / 2;
     const maxX = halfWorld * scale;
@@ -153,7 +147,6 @@ export const Viewport = () => {
     };
   };
 
-  // Handle zoom with mouse wheel
   const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
 
@@ -179,12 +172,10 @@ export const Viewport = () => {
       y: pointer.y - mousePointTo.y * newScale,
     };
 
-    // Clamp position within world bounds
     newPos = clampViewportPosition(newPos.x, newPos.y, newScale);
 
     stage.position(newPos);
 
-    // Save viewport state
     updateViewport({
       x: newPos.x,
       y: newPos.y,
@@ -193,13 +184,11 @@ export const Viewport = () => {
   };
 
   const handleDragEnd = () => {
-    // Save viewport state after dragging
     const stage = stageRef.current;
     if (stage) {
       let pos = stage.position();
       const scale = stage.scaleX();
 
-      // Clamp position within world bounds
       pos = clampViewportPosition(pos.x, pos.y, scale);
       stage.position(pos);
 
@@ -211,7 +200,6 @@ export const Viewport = () => {
     }
   };
 
-  // Handle context menu
   const handleContextMenu = (e: KonvaEventObject<PointerEvent>) => {
     e.evt.preventDefault();
 
@@ -221,7 +209,6 @@ export const Viewport = () => {
     const pointerPos = stage.getPointerPosition();
     if (!pointerPos) return;
 
-    // Transform screen coordinates to canvas coordinates
     const transform = stage.getAbsoluteTransform().copy().invert();
     const canvasPos = transform.point(pointerPos);
 
@@ -233,7 +220,6 @@ export const Viewport = () => {
     });
   };
 
-  // Handle mouse move for connection creation
   const handleMouseMove = (e: KonvaEventObject<MouseEvent>) => {
     if (!isCreatingConnection) return;
 
@@ -249,13 +235,10 @@ export const Viewport = () => {
     setMousePos(canvasPos);
   };
 
-  // Handle click on stage (for connection creation)
   const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
-    // If clicking on empty space, deselect
     if (e.target === e.target.getStage()) {
       selectElement(null, null);
 
-      // Cancel connection creation if clicking on empty space
       if (isCreatingConnection) {
         setIsCreatingConnection(false);
         setConnectionStart(null);
@@ -263,13 +246,11 @@ export const Viewport = () => {
     }
   };
 
-  // Context menu actions
   const handleCreateNode = () => {
     if (contextMenu) {
       let x = contextMenu.canvasX;
       let y = contextMenu.canvasY;
 
-      // Apply snapping if grid is enabled
       if (gridSettings.enabled) {
         const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
         x = snapped.x;
@@ -287,7 +268,6 @@ export const Viewport = () => {
       let x = contextMenu.canvasX;
       let y = contextMenu.canvasY;
 
-      // Apply snapping if grid is enabled
       if (gridSettings.enabled) {
         const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
         x = snapped.x;
@@ -340,7 +320,6 @@ export const Viewport = () => {
   const handleOrbitClick = (orbitId: string, e?: MouseEvent) => {
     const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
     if (isMultiSelectKey) {
-      // If there's a single selected element, add it to multi-selection first
       if (
         selectedElement &&
         !selectedElements.has(selectedElement.id) &&
@@ -374,10 +353,8 @@ export const Viewport = () => {
       setIsCreatingConnection(false);
       setConnectionStart(null);
     } else {
-      // Check for Shift or Ctrl key for multi-selection
       const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
       if (isMultiSelectKey) {
-        // If there's a single selected element, add it to multi-selection first
         if (
           selectedElement &&
           !selectedElements.has(selectedElement.id) &&
@@ -398,7 +375,6 @@ export const Viewport = () => {
   const handleImageClick = (imageId: string, e?: MouseEvent) => {
     const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
     if (isMultiSelectKey) {
-      // If there's a single selected element, add it to multi-selection first
       if (
         selectedElement &&
         !selectedElements.has(selectedElement.id) &&
@@ -441,12 +417,10 @@ export const Viewport = () => {
     selectElement(connectionId, 'connection');
   };
 
-  // Multi-element drag handlers
   const handleMultiDragStart = (leaderId: string) => {
     const startPositions = new Map<string, { x: number; y: number }>();
     const draggingNodes = new Set<string>();
 
-    // Store start positions for all selected elements
     for (const [id, elementData] of multiSelectedElementsData.entries()) {
       if (elementData.type === 'node' && nodes[id]) {
         startPositions.set(id, { x: nodes[id].x, y: nodes[id].y });
@@ -468,11 +442,9 @@ export const Viewport = () => {
     const startPos = multiDragStartPositions.get(leaderId);
     if (!startPos) return;
 
-    // Calculate offset from leader's start position
     const offsetX = newLeaderPos.x - startPos.x;
     const offsetY = newLeaderPos.y - startPos.y;
 
-    // Update positions for all selected elements INCLUDING leader
     const updates: Array<{
       id: string;
       type: 'node' | 'image' | 'orbit';
@@ -508,11 +480,9 @@ export const Viewport = () => {
       return;
     }
 
-    // Calculate final offset
     const offsetX = finalLeaderPos.x - startPos.x;
     const offsetY = finalLeaderPos.y - startPos.y;
 
-    // Prepare final updates for all elements including leader
     const updates: Array<{
       id: string;
       type: 'node' | 'image' | 'orbit';
@@ -543,7 +513,6 @@ export const Viewport = () => {
     setIsDraggingElement(false);
   };
 
-  // Determine if element is in multi-selection mode
   const isMultiSelectMode = selectedElements.size > 0;
 
   return (
@@ -599,9 +568,9 @@ export const Viewport = () => {
                 isSelected={
                   isMultiSelectMode
                     ? isElementSelected(id)
-                    : (selectedElement?.id === id
+                    : selectedElement?.id === id
                       ? selectedElement?.type === 'image'
-                      : null)
+                      : null
                 }
                 onSelect={(e) => handleImageClick(id, e?.evt)}
                 onContextMenu={handleImageContextMenu}
@@ -633,7 +602,6 @@ export const Viewport = () => {
               const toNode = nodes[connection.toId];
               if (!fromNode || !toNode) return null;
 
-              // Hide connection if one of its nodes is being dragged (single or multi)
               const isHidden =
                 (draggingNodeId &&
                   (connection.fromId === draggingNodeId || connection.toId === draggingNodeId)) ||
@@ -670,7 +638,6 @@ export const Viewport = () => {
                     const connectedNode = nodes[connectedId];
                     if (!connectedNode) return null;
 
-                    // Check if we need to invert curvature based on direction
                     const shouldInvertCurvature =
                       connection.fromId === connectedId && connection.toId === draggingNodeId;
 
@@ -700,7 +667,6 @@ export const Viewport = () => {
                     const toNode = nodes[connection.toId];
                     if (!fromNode || !toNode) return null;
 
-                    // Use current positions from store (updated by handleMultiDragMove)
                     const fromPos = { x: fromNode.x, y: fromNode.y };
                     const toPos = { x: toNode.x, y: toNode.y };
 
@@ -724,9 +690,9 @@ export const Viewport = () => {
                 isSelected={
                   isMultiSelectMode
                     ? isElementSelected(id)
-                    : (selectedElement?.id === id
+                    : selectedElement?.id === id
                       ? selectedElement?.type === 'node'
-                      : null)
+                      : null
                 }
                 onSelect={(e) => handleNodeClick(id, e?.evt)}
                 onContextMenu={handleNodeContextMenu}
@@ -766,9 +732,9 @@ export const Viewport = () => {
                 isSelected={
                   isMultiSelectMode
                     ? isElementSelected(id)
-                    : (selectedElement?.id === id
+                    : selectedElement?.id === id
                       ? selectedElement?.type === 'orbit'
-                      : null)
+                      : null
                 }
                 onSelect={(e) => handleOrbitClick(id, e?.evt)}
                 onContextMenu={handleOrbitContextMenu}

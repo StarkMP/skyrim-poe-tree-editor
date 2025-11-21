@@ -23,7 +23,6 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update input when image changes
   useEffect(() => {
     setSelectedFile(null);
     setUploadError('');
@@ -114,7 +113,7 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
       });
       updateImage(imageId, { imageUrl });
       setSelectedFile(null);
-      // Reset file input
+
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }

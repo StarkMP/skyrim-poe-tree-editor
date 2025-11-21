@@ -6,16 +6,6 @@ import { createS3Client } from './s3-credentials';
 const BUCKET_NAME = 'stb-poe-editor';
 const PUBLIC_URL_BASE = 'https://data.poe-tree-editor.skytb.ru';
 
-/**
- * Validates image dimensions
- * @param file - The image file to validate
- * @param requiredWidth - Required width (if specified)
- * @param requiredHeight - Required height (if specified)
- * @param maxWidth - Maximum width (if specified)
- * @param maxHeight - Maximum height (if specified)
- * @returns Promise that resolves if validation passes
- * @throws Error if validation fails
- */
 async function validateImageDimensions(
   file: File,
   options?: {
@@ -84,14 +74,6 @@ async function validateImageDimensions(
   });
 }
 
-/**
- * Uploads an icon file to S3 storage
- * @param file - The image file to upload
- * @param secretKey - The S3 secret access key
- * @param options - Optional validation options for image dimensions
- * @returns Promise with the public URL of the uploaded file
- * @throws Error if upload fails
- */
 export async function uploadIconToS3(
   file: File,
   secretKey: string,

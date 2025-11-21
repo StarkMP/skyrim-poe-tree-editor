@@ -31,7 +31,6 @@ type NodeSettingsProps = {
 };
 
 export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
-  // Optimized selectors - only subscribe to what we need
   const updateNode = useStore((state) => state.updateNode);
   const gamePerks = useStore((state) => state.gamePerks);
 
@@ -41,7 +40,6 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
   const [keywordsInput, setKeywordsInput] = useState(node.keywords.join(', '));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Memoize perk options to avoid recreating on every render
   const perkOptions = useMemo<ComboboxOption[]>(
     () =>
       Object.entries(gamePerks).map(([id, perk]) => ({
@@ -52,7 +50,6 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
     [gamePerks]
   );
 
-  // Update input when node changes
   useEffect(() => {
     setSelectedFile(null);
     setUploadError('');
@@ -61,11 +58,10 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
 
   const handleTypeChange = (value: string) => {
     const newType = Number.parseInt(value) as NodeType;
-    // Reset icon when changing node type
+
     updateNode(nodeId, { type: newType, iconUrl: '' });
   };
 
-  // Get required icon size based on node type
   const getRequiredIconSize = (nodeType: NodeType): number => {
     switch (nodeType) {
       case NodeType.SmallNode: {
@@ -106,7 +102,6 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
   const handleKeywordsChange = (value: string) => {
     setKeywordsInput(value);
 
-    // Разбиваем по запятым и/или новым строкам
     const keywords = value
       .split(/[,\n]+/)
       .map((k) => k.trim())
@@ -165,7 +160,7 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
       });
       updateNode(nodeId, { iconUrl });
       setSelectedFile(null);
-      // Reset file input
+
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }

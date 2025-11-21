@@ -64,7 +64,6 @@ export const SettingsPanel = () => {
   };
 
   const handleS3KeyDialogClose = () => {
-    // Allow closing this dialog (unlike the initial one in App.tsx)
     setS3KeyDialogOpen(false);
   };
 

@@ -19,7 +19,6 @@ import { ExportData, ExportNode, NodeType } from '@/types';
 import { getNodeRadius } from '@/utils/node-helpers';
 import { AtlasNode, loadImage, packTextureAtlas } from '@/utils/texture-atlas';
 
-// Border images for each node type
 const nodeBorderImages: Record<NodeType, string> = {
   [NodeType.SmallNode]: smallNodeBorder,
   [NodeType.LargeNode]: largeNodeBorder,
@@ -53,7 +52,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
   const validateData = (): string[] => {
     const validationErrors: string[] = [];
 
-    // Validate nodes - group errors by node
     for (const [nodeId, node] of Object.entries(nodes)) {
       const nodeErrors: string[] = [];
 
@@ -74,7 +72,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       }
     }
 
-    // Validate images - group errors by image
     for (const [imageId, image] of Object.entries(images)) {
       const imageErrors: string[] = [];
 
@@ -96,7 +93,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     let maxX = -Infinity;
     let maxY = -Infinity;
 
-    // Consider nodes with their radii
     for (const node of Object.values(nodes)) {
       const radius = getNodeRadius(node.type);
       minX = Math.min(minX, node.x - radius);
@@ -105,7 +101,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       maxY = Math.max(maxY, node.y + radius);
     }
 
-    // Consider images
     for (const image of Object.values(images)) {
       minX = Math.min(minX, image.x);
       minY = Math.min(minY, image.y);
@@ -127,15 +122,12 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     blob: Blob;
     rects: Map<string, { x: number; y: number; width: number; height: number }>;
   }> => {
-    // Подготавливаем данные для атласа
     const atlasNodes: AtlasNode[] = [];
 
     for (const [uid, node] of Object.entries(nodes)) {
       try {
-        // Загружаем бордер для каждой ноды
         const borderImage = await loadImage(nodeBorderImages[node.type]);
 
-        // Если есть иконка - загружаем её, иначе null
         const iconImage = node.iconUrl ? await loadImage(node.iconUrl) : null;
 
         atlasNodes.push({
@@ -150,10 +142,8 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       }
     }
 
-    // Упаковываем ноды в атлас
     const atlasResult = packTextureAtlas(atlasNodes, 4);
 
-    // Конвертируем canvas в blob
     const blob = await new Promise<Blob>((resolve, reject) => {
       atlasResult.canvas.toBlob((blob) => {
         if (blob) {
@@ -203,7 +193,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       try {
         const img = await loadImage(image.imageUrl);
 
-        // Create a canvas for this individual image
         const canvas = document.createElement('canvas');
         canvas.width = image.width;
         canvas.height = image.height;
@@ -211,14 +200,10 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         const ctx = canvas.getContext('2d');
         if (!ctx) throw new Error('Failed to get canvas context');
 
-        // Apply opacity to the canvas context - it will be "baked" into the PNG
         ctx.globalAlpha = image.opacity ?? 1;
 
-        // Draw image with applied opacity
-        // Rotation will be applied in the game interface
         ctx.drawImage(img, 0, 0, image.width, image.height);
 
-        // Convert canvas to blob
         const blob = await new Promise<Blob>((resolve, reject) => {
           canvas.toBlob((blob) => {
             if (blob) {
@@ -255,18 +240,14 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
   ): Promise<Blob> => {
     const zip = new JSZip();
 
-    // Add game-data.json
     zip.file('game-data.json', gameDataBlob);
 
-    // Add node-icons.png
     zip.file('node-icons.png', textureAtlasBlob);
 
-    // Add all background images
     for (const bgImage of backgroundImages) {
       zip.file(bgImage.filename, bgImage.blob);
     }
 
-    // Generate the zip file
     return await zip.generateAsync({ type: 'blob' });
   };
 
@@ -274,7 +255,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     setErrors([]);
     setExportResult(null);
 
-    // Validate
     const validationErrors = validateData();
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
@@ -284,16 +264,12 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     setIsExporting(true);
 
     try {
-      // Calculate bounds
       const bounds = calculateBounds();
 
-      // Generate texture atlas
       const { blob: textureAtlasBlob, rects: textureRects } = await generateTextureAtlas();
 
-      // Generate background images
       const backgroundImages = await generateBackgroundImages(bounds);
 
-      // Generate editor-data.json
       const editorData = {
         nodes,
         images,
@@ -309,7 +285,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       });
       const editorDataUrl = URL.createObjectURL(editorDataBlob);
 
-      // Generate game-data.json with texture coordinates and background images
       const exportNodes: { [uid: string]: ExportNode } = {};
       for (const [uid, node] of Object.entries(nodes)) {
         const textureRect = textureRects.get(uid);
@@ -355,7 +330,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         type: 'application/json',
       });
 
-      // Create ZIP archive with game files
       const gameFilesZipBlob = await createGameFilesZip(
         gameDataBlob,
         textureAtlasBlob,
@@ -376,7 +350,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
   };
 
   const handleClose = () => {
-    // Revoke URLs to free memory
     if (exportResult) {
       URL.revokeObjectURL(exportResult.editorDataUrl);
       URL.revokeObjectURL(exportResult.gameFilesZipUrl);
@@ -389,13 +362,11 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      // Revoke URLs to free memory
       if (exportResult) {
         URL.revokeObjectURL(exportResult.editorDataUrl);
         URL.revokeObjectURL(exportResult.gameFilesZipUrl);
       }
 
-      // Reset state when closing
       setErrors([]);
       setExportResult(null);
       setIsExporting(false);

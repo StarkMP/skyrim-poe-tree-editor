@@ -50,7 +50,6 @@ export const ImportDialog = ({ open, onOpenChange }: ImportDialogProps) => {
 
       const validationErrors: string[] = [];
 
-      // Validate structure
       if (!data.nodes || typeof data.nodes !== 'object') {
         validationErrors.push('Некорректная структура данных: отсутствует поле nodes');
       }
@@ -65,7 +64,6 @@ export const ImportDialog = ({ open, onOpenChange }: ImportDialogProps) => {
         return;
       }
 
-      // Validate perks
       const missingPerks: string[] = [];
 
       for (const [nodeId, node] of Object.entries(data.nodes)) {
@@ -85,7 +83,6 @@ export const ImportDialog = ({ open, onOpenChange }: ImportDialogProps) => {
         return;
       }
 
-      // Import successful
       importData(data);
       setFile(null);
       setErrors([]);
@@ -109,7 +106,6 @@ export const ImportDialog = ({ open, onOpenChange }: ImportDialogProps) => {
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      // Reset state when closing
       setFile(null);
       setErrors([]);
       setIsValidating(false);

@@ -12,15 +12,12 @@ export const App = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if focus is on an input element
       const target = e.target as HTMLElement;
       const isInputFocused =
         target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
-      // Don't handle undo if input is focused
       if (isInputFocused) return;
 
-      // Ctrl+Z or Cmd+Z for undo
       if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && !e.shiftKey) {
         e.preventDefault();
         if (canUndo()) {

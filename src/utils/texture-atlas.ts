@@ -58,7 +58,8 @@ function groupNodesByType(nodes: AtlasNode[]): Map<NodeType, AtlasNode[]> {
 export function packTextureAtlas(
   nodes: AtlasNode[],
   padding: number = 4,
-  maxWidth: number = 2048
+  maxWidth: number = 2048,
+  scaleFactor: number = 1
 ): TextureAtlasResult {
   const rects = new Map<string, AtlasRect>();
 
@@ -68,19 +69,23 @@ export function packTextureAtlas(
     (a, b) => getNodeAtlasSize(b) - getNodeAtlasSize(a)
   );
 
-  let currentY = padding;
+  // Применяем масштабный коэффициент к padding и maxWidth
+  const scaledPadding = padding * scaleFactor;
+  const scaledMaxWidth = maxWidth * scaleFactor;
+
+  let currentY = scaledPadding;
   let actualMaxWidth = 0;
 
   for (const type of sortedTypes) {
     const groupNodes = groups.get(type)!;
-    const nodeSize = getNodeAtlasSize(type);
+    const nodeSize = getNodeAtlasSize(type) * scaleFactor;
 
-    let currentX = padding;
+    let currentX = scaledPadding;
 
     for (const node of groupNodes) {
-      if (currentX + nodeSize > maxWidth && currentX > padding) {
-        currentX = padding;
-        currentY += nodeSize + padding;
+      if (currentX + nodeSize > scaledMaxWidth && currentX > scaledPadding) {
+        currentX = scaledPadding;
+        currentY += nodeSize + scaledPadding;
       }
 
       rects.set(node.uid, {
@@ -91,14 +96,14 @@ export function packTextureAtlas(
         height: nodeSize,
       });
 
-      currentX += nodeSize + padding;
+      currentX += nodeSize + scaledPadding;
       actualMaxWidth = Math.max(actualMaxWidth, currentX);
     }
 
-    currentY += nodeSize + padding;
+    currentY += nodeSize + scaledPadding;
   }
 
-  const atlasWidth = Math.min(actualMaxWidth, maxWidth);
+  const atlasWidth = Math.min(actualMaxWidth, scaledMaxWidth);
   const atlasHeight = currentY;
 
   const canvas = document.createElement('canvas');
@@ -112,7 +117,7 @@ export function packTextureAtlas(
 
   for (const node of nodes) {
     const rect = rects.get(node.uid)!;
-    const radius = getNodeRadius(node.type);
+    const radius = getNodeRadius(node.type) * scaleFactor;
     const centerX = rect.x + rect.width / 2;
     const centerY = rect.y + rect.height / 2;
 

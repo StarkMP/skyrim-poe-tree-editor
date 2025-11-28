@@ -7,6 +7,29 @@ export type GamePerksData = {
   [id: string]: GamePerk;
 };
 
+export const enum SkillTree {
+  Illusion,
+  Conjuration,
+  Destruction,
+  Restoration,
+  Alteration,
+  Enchanting,
+  Smithing,
+  HeavyArmor,
+  Blocking,
+  TwoHanded,
+  OneHanded,
+  Archery,
+  Evasion,
+  Sneak,
+  Alchemy,
+  Pickpocket,
+  Thuum,
+  Speech,
+  Vampire,
+  Lycanthropy,
+}
+
 export const enum NodeType {
   SmallNode = 0,
   LargeNode = 1,
@@ -25,6 +48,7 @@ export type EditorNode = {
   keywords: string[];
   x: number;
   y: number;
+  skillTree?: SkillTree;
 };
 
 export type EditorNodes = { [uid: NodeUID]: EditorNode };
@@ -100,6 +124,7 @@ export type ExportNode = {
   keywords: string[];
   x: number;
   y: number;
+  skillTree?: SkillTree;
   texture: {
     x: number;
     y: number;

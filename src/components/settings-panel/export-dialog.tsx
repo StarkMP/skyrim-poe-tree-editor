@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import { ATLAS_SCALE_FACTOR } from '@/constants';
 import { useStore } from '@/store';
 import { ExportData, ExportNode, NodeType } from '@/types';
 import { getNodeRadius } from '@/utils/node-helpers';
@@ -69,6 +70,30 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         validationErrors.push(
           `Нода [${node.title || 'Нет имени'}] (${nodeId.slice(0, 8)}): ${nodeErrors.join(', ')}`
         );
+      }
+    }
+
+    const perkIdMap = new Map<string, string[]>();
+
+    for (const [nodeId, node] of Object.entries(nodes)) {
+      if (node.perkId) {
+        if (!perkIdMap.has(node.perkId)) {
+          perkIdMap.set(node.perkId, []);
+        }
+        perkIdMap.get(node.perkId)!.push(nodeId);
+      }
+    }
+
+    for (const [perkId, nodeIds] of perkIdMap.entries()) {
+      if (nodeIds.length > 1) {
+        const nodeNames = nodeIds
+          .map((id) => {
+            const node = nodes[id];
+            return `[${node.title || 'Нет имени'}] (${id.slice(0, 8)})`;
+          })
+          .join(', ');
+
+        validationErrors.push(`Перк "${perkId}" используется несколькими нодами: ${nodeNames}`);
       }
     }
 
@@ -142,7 +167,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       }
     }
 
-    const atlasResult = packTextureAtlas(atlasNodes, 4);
+    const atlasResult = packTextureAtlas(atlasNodes, 4, 2048, ATLAS_SCALE_FACTOR);
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       atlasResult.canvas.toBlob((blob) => {
@@ -302,6 +327,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
           keywords: node.keywords,
           x: node.x - bounds.x,
           y: node.y - bounds.y,
+          skillTree: node.skillTree,
           texture: {
             x: textureRect.x,
             y: textureRect.y,

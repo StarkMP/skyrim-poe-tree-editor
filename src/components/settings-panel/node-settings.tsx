@@ -20,9 +20,10 @@ import {
   NODE_RADIUS_LARGE,
   NODE_RADIUS_MASTER,
   NODE_RADIUS_SMALL,
+  SKILL_TREE_LABEL,
 } from '@/constants';
 import { useStore } from '@/store';
-import { EditorNode, NodeType } from '@/types';
+import { EditorNode, NodeType, SkillTree } from '@/types';
 import { uploadIconToS3 } from '@/utils/s3-upload';
 
 type NodeSettingsProps = {
@@ -33,6 +34,7 @@ type NodeSettingsProps = {
 export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
   const updateNode = useStore((state) => state.updateNode);
   const gamePerks = useStore((state) => state.gamePerks);
+  const nodes = useStore((state) => state.nodes);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -40,14 +42,26 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
   const [keywordsInput, setKeywordsInput] = useState(node.keywords.join(', '));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const usedPerkIds = useMemo(() => {
+    const used = new Set<string>();
+    for (const [id, n] of Object.entries(nodes)) {
+      if (id !== nodeId && n.perkId) {
+        used.add(n.perkId);
+      }
+    }
+    return used;
+  }, [nodes, nodeId]);
+
   const perkOptions = useMemo<ComboboxOption[]>(
     () =>
-      Object.entries(gamePerks).map(([id, perk]) => ({
-        value: id,
-        label: `${perk.name} (${id})`,
-        searchText: `${perk.name} ${id}`.toLowerCase(),
-      })),
-    [gamePerks]
+      Object.entries(gamePerks)
+        .filter(([id]) => !usedPerkIds.has(id))
+        .map(([id, perk]) => ({
+          value: id,
+          label: `${perk.name} (${id})`,
+          searchText: `${perk.name} ${id}`.toLowerCase(),
+        })),
+    [gamePerks, usedPerkIds]
   );
 
   useEffect(() => {
@@ -60,6 +74,14 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
     const newType = Number.parseInt(value) as NodeType;
 
     updateNode(nodeId, { type: newType, iconUrl: '' });
+  };
+
+  const handleSkillTreeChange = (value: string) => {
+    if (value === 'none') {
+      updateNode(nodeId, { skillTree: undefined });
+    } else {
+      updateNode(nodeId, { skillTree: Number(value) as SkillTree });
+    }
   };
 
   const getRequiredIconSize = (nodeType: NodeType): number => {
@@ -188,6 +210,29 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
                 <SelectItem value={NodeType.SmallNode.toString()}>Малая нода</SelectItem>
                 <SelectItem value={NodeType.LargeNode.toString()}>Большая нода</SelectItem>
                 <SelectItem value={NodeType.MasterNode.toString()}>Мастер нода</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Skill Tree */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="node-skill-tree" className="text-xs">
+              Ветка навыков
+            </Label>
+            <Select
+              value={node.skillTree === undefined ? 'none' : node.skillTree.toString()}
+              onValueChange={handleSkillTreeChange}
+            >
+              <SelectTrigger id="node-skill-tree" className="h-8 text-xs">
+                <SelectValue placeholder="Не выбрано" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Не выбрано</SelectItem>
+                {Object.entries(SKILL_TREE_LABEL).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

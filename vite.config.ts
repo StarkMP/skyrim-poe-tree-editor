@@ -16,6 +16,7 @@ export default ({ mode }: { mode: string }): UserConfigExport => {
     },
     server: {
       open: true,
+      port: 4444,
     },
     build: {
       outDir: process.env.BUILD_FOLDER || 'dist',

@@ -6,6 +6,8 @@ export const NODE_RADIUS_MASTER = 48 as const;
 export const NODE_STROKE_WIDTH = 8 as const;
 export const NODE_ICON_SIZE_PERCENT = 0.75 as const;
 
+export const ATLAS_SCALE_FACTOR = 2 as const;
+
 export const ZOOM_SPEED = 0.02 as const;
 export const MIN_ZOOM = 0.06 as const;
 export const MAX_ZOOM = 1.2 as const;
@@ -57,3 +59,28 @@ export const ORBIT_POINT_STROKE = 'rgba(255, 255, 255, 0.6)' as const;
 export const ORBIT_LINE_COLOR = 'rgba(155, 155, 215, 0.2)' as const;
 
 export const IMAGE_BORDER_INACTIVE = '#404040' as const;
+
+import { SkillTree } from './types';
+
+export const SKILL_TREE_LABEL: Record<SkillTree, string> = {
+  [SkillTree.Illusion]: 'Иллюзия',
+  [SkillTree.Conjuration]: 'Колдовство',
+  [SkillTree.Destruction]: 'Разрушение',
+  [SkillTree.Restoration]: 'Восстановление',
+  [SkillTree.Alteration]: 'Изменение',
+  [SkillTree.Enchanting]: 'Зачарование',
+  [SkillTree.Smithing]: 'Кузнечное дело',
+  [SkillTree.HeavyArmor]: 'Тяжёлая броня',
+  [SkillTree.Blocking]: 'Блокирование',
+  [SkillTree.TwoHanded]: 'Двуручное оружие',
+  [SkillTree.OneHanded]: 'Одноручное оружие',
+  [SkillTree.Archery]: 'Дальний бой',
+  [SkillTree.Evasion]: 'Лёгкая броня',
+  [SkillTree.Sneak]: 'Скрытность',
+  [SkillTree.Alchemy]: 'Алхимия',
+  [SkillTree.Pickpocket]: 'Воровство',
+  [SkillTree.Thuum]: 'Путь голоса',
+  [SkillTree.Speech]: 'Красноречие',
+  [SkillTree.Vampire]: 'Вампир',
+  [SkillTree.Lycanthropy]: 'Вервольф',
+};

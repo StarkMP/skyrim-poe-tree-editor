@@ -8,7 +8,6 @@ import { useStore } from '@/store';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
 
 import { BackgroundImage } from './background-image';
-import { BackgroundTexture } from './background-texture';
 import { ConnectionLine } from './connection-line';
 import { ContextMenu } from './context-menu';
 import { GridLayer } from './grid-layer';
@@ -20,6 +19,7 @@ import { WebLayer } from './web-layer';
 export const Viewport = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
+  const viewportUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [stageSize, setStageSize] = useState({
     width: 0,
     height: 0,
@@ -82,9 +82,19 @@ export const Viewport = () => {
     const stage = stageRef.current;
     if (!stage || !viewport) return;
 
-    stage.position({ x: viewport.x, y: viewport.y });
-    stage.scale({ x: viewport.scale, y: viewport.scale });
-    stage.batchDraw();
+    // Only update if viewport state differs from current stage state
+    const currentPos = stage.position();
+    const currentScale = stage.scaleX();
+
+    if (
+      currentPos.x !== viewport.x ||
+      currentPos.y !== viewport.y ||
+      currentScale !== viewport.scale
+    ) {
+      stage.position({ x: viewport.x, y: viewport.y });
+      stage.scale({ x: viewport.scale, y: viewport.scale });
+      stage.batchDraw();
+    }
   }, [viewport, stageSize]);
 
   useEffect(() => {
@@ -175,12 +185,20 @@ export const Viewport = () => {
     newPos = clampViewportPosition(newPos.x, newPos.y, newScale);
 
     stage.position(newPos);
+    stage.batchDraw();
 
-    updateViewport({
-      x: newPos.x,
-      y: newPos.y,
-      scale: newScale,
-    });
+    // Debounced update to store - only update state after zoom completes
+    if (viewportUpdateTimerRef.current) {
+      clearTimeout(viewportUpdateTimerRef.current);
+    }
+
+    viewportUpdateTimerRef.current = setTimeout(() => {
+      updateViewport({
+        x: newPos.x,
+        y: newPos.y,
+        scale: newScale,
+      });
+    }, 100);
   };
 
   const handleDragEnd = () => {
@@ -536,9 +554,6 @@ export const Viewport = () => {
           onClick={handleStageClick}
         >
           <Layer>
-            {/* Background Texture - lowest z-index */}
-            <BackgroundTexture />
-
             {/* Web Layer - above background, below grid */}
             <WebLayer
               enabled={webSettings.enabled}

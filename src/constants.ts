@@ -6,10 +6,10 @@ export const NODE_RADIUS_MASTER = 48 as const;
 export const NODE_STROKE_WIDTH = 8 as const;
 export const NODE_ICON_SIZE_PERCENT = 0.75 as const;
 
-export const ATLAS_SCALE_FACTOR = 2 as const;
+export const ATLAS_SCALE_FACTOR = 1.2 as const;
 
-export const ZOOM_SPEED = 0.02 as const;
-export const MIN_ZOOM = 0.06 as const;
+export const ZOOM_SPEED = 0.05 as const;
+export const MIN_ZOOM = 0.075 as const;
 export const MAX_ZOOM = 1.2 as const;
 
 export const ORBIT_MIN_RADIUS = 50 as const;
@@ -21,7 +21,7 @@ export const ORBIT_DEFAULT_POINTS = 8 as const;
 export const ORBIT_DEFAULT_ROTATION = 0 as const;
 export const ORBIT_SNAP_THRESHOLD = 30 as const;
 
-export const VIEWPORT_BACKGROUND_COLOR = '#080B10' as const;
+export const VIEWPORT_BACKGROUND_COLOR = '#06090C' as const;
 export const VIEWPORT_WORLD_SIZE = 100_000 as const;
 export const GRID_DOT_COLOR = 'rgba(255, 255, 255, 0.2)' as const;
 export const GRID_MIN_SCALE = 0.3 as const;

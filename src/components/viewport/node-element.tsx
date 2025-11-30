@@ -6,7 +6,7 @@ import useImage from 'use-image';
 import largeNodeBorder from '@/assets/large-node-border.png';
 import masterNodeBorder from '@/assets/master-node-border.png';
 import smallNodeBorder from '@/assets/small-node-border.png';
-import { NODE_ICON_SIZE_PERCENT, SELECTION_COLOR } from '@/constants';
+import { NODE_ICON_SIZE_PERCENT, SELECTION_COLOR, VIEWPORT_BACKGROUND_COLOR } from '@/constants';
 import { useStore } from '@/store';
 import { EditorNode, NodeType } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
@@ -50,6 +50,7 @@ export const NodeElement = ({
 
   const borderScale = 1.15;
   const borderSize = radius * 2 * borderScale;
+  const outlineRadius = radius * borderScale;
 
   useEffect(() => {
     if (!image) {
@@ -184,6 +185,15 @@ export const NodeElement = ({
           height={borderSize}
         />
       ) : null}
+
+      {/* Outline with viewport background color */}
+      <Circle
+        radius={outlineRadius}
+        stroke={VIEWPORT_BACKGROUND_COLOR}
+        strokeWidth={2}
+        fill="transparent"
+        listening={false}
+      />
 
       {/* Selection highlight */}
       {isSelected ? (

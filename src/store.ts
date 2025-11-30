@@ -32,6 +32,29 @@ import { getSecretKey } from './utils/s3-credentials';
 
 const STORAGE_KEY = 'skyrim-poe-tree-editor-data';
 const MAX_UNDO_STACK_SIZE = 50;
+const SAVE_DEBOUNCE_MS = 300;
+
+let saveToLocalStorageTimer: NodeJS.Timeout | null = null;
+
+const debouncedSaveToLocalStorage = (state: Store) => {
+  if (saveToLocalStorageTimer) {
+    clearTimeout(saveToLocalStorageTimer);
+  }
+
+  saveToLocalStorageTimer = setTimeout(() => {
+    const data: EditorData = {
+      nodes: state.nodes,
+      images: state.images,
+      orbits: state.orbits,
+      connections: state.connections,
+      viewport: state.viewport,
+      gridSettings: state.gridSettings,
+      webSettings: state.webSettings,
+      globalSettingsExpanded: state.globalSettingsExpanded,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }, SAVE_DEBOUNCE_MS);
+};
 
 type SelectedElement = {
   id: string;
@@ -588,7 +611,7 @@ export const useStore = create<Store>((set, get) => {
           orbits: newOrbits,
         };
       });
-      get().saveToLocalStorage();
+      debouncedSaveToLocalStorage(get());
     },
 
     requestCenterOnElement: (id: string, type: 'node' | 'image' | 'orbit') => {

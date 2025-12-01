@@ -6,7 +6,7 @@ export const NODE_RADIUS_MASTER = 48 as const;
 export const NODE_STROKE_WIDTH = 8 as const;
 export const NODE_ICON_SIZE_PERCENT = 0.75 as const;
 
-export const ATLAS_SCALE_FACTOR = 1.2 as const;
+export const ATLAS_SCALE_FACTOR = 1.5 as const;
 
 export const ZOOM_SPEED = 0.05 as const;
 export const MIN_ZOOM = 0.075 as const;

@@ -16,7 +16,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { ATLAS_SCALE_FACTOR } from '@/constants';
 import { useStore } from '@/store';
-import { ExportData, ExportNode, NodeType } from '@/types';
+import { Connection, ExportData, ExportNode, NodeType } from '@/types';
 import { getNodeRadius } from '@/utils/node-helpers';
 import { AtlasNode, loadImage, packTextureAtlas } from '@/utils/texture-atlas';
 
@@ -310,6 +310,11 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       });
       const editorDataUrl = URL.createObjectURL(editorDataBlob);
 
+      const uidToPerkIdMap = new Map<string, string>();
+      for (const [uid, node] of Object.entries(nodes)) {
+        uidToPerkIdMap.set(uid, node.perkId);
+      }
+
       const exportNodes: { [uid: string]: ExportNode } = {};
       for (const [uid, node] of Object.entries(nodes)) {
         const textureRect = textureRects.get(uid);
@@ -318,9 +323,8 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
           continue;
         }
 
-        exportNodes[uid] = {
+        exportNodes[node.perkId] = {
           type: node.type,
-          perkId: node.perkId,
           title: node.title,
           description: node.description,
           reqDescription: node.reqDescription,
@@ -337,11 +341,28 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
         };
       }
 
+      const exportConnections: { [uid: string]: Connection } = {};
+      for (const [connectionId, connection] of Object.entries(connections)) {
+        const fromPerkId = uidToPerkIdMap.get(connection.fromId);
+        const toPerkId = uidToPerkIdMap.get(connection.toId);
+
+        if (!fromPerkId || !toPerkId) {
+          console.warn(`Connection ${connectionId} references invalid node IDs`);
+          continue;
+        }
+
+        exportConnections[connectionId] = {
+          fromId: fromPerkId,
+          toId: toPerkId,
+          curvature: connection.curvature,
+        };
+      }
+
       const gameData: ExportData = {
         width: bounds.width,
         height: bounds.height,
         nodes: exportNodes,
-        connections,
+        connections: exportConnections,
         backgroundImages: backgroundImages.map((bg) => ({
           filename: bg.filename,
           x: bg.x,

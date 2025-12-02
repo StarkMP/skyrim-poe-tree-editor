@@ -36,8 +36,6 @@ export const enum NodeType {
   MasterNode = 2,
 }
 
-type NodeUID = string;
-
 export type EditorNode = {
   type: NodeType;
   perkId: string;
@@ -51,7 +49,7 @@ export type EditorNode = {
   skillTree?: SkillTree;
 };
 
-export type EditorNodes = { [uid: NodeUID]: EditorNode };
+export type EditorNodes = { [uid: string]: EditorNode };
 
 export type Connection = {
   fromId: string;
@@ -117,7 +115,6 @@ export type EditorData = {
 
 export type ExportNode = {
   type: NodeType;
-  perkId: string;
   title: string;
   description: string;
   reqDescription: string;
@@ -133,7 +130,7 @@ export type ExportNode = {
   };
 };
 
-export type ExportNodes = { [uid: NodeUID]: ExportNode };
+export type ExportNodes = { [uid: EditorNode['perkId']]: ExportNode };
 
 export type ExportData = {
   width: number;

@@ -24,6 +24,7 @@ import {
 } from '@/constants';
 import { useStore } from '@/store';
 import { EditorNode, NodeType, SkillTree } from '@/types';
+import { getConnectedNodeIds } from '@/utils/node-helpers';
 import { uploadIconToS3 } from '@/utils/s3-upload';
 
 type NodeSettingsProps = {
@@ -35,6 +36,7 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
   const updateNode = useStore((state) => state.updateNode);
   const gamePerks = useStore((state) => state.gamePerks);
   const nodes = useStore((state) => state.nodes);
+  const connections = useStore((state) => state.connections);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -77,10 +79,14 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
   };
 
   const handleSkillTreeChange = (value: string) => {
-    if (value === 'none') {
-      updateNode(nodeId, { skillTree: undefined });
-    } else {
-      updateNode(nodeId, { skillTree: Number(value) as SkillTree });
+    const newSkillTree = value === 'none' ? undefined : (Number(value) as SkillTree);
+
+    // Получить все ноды, связанные с текущей через connections
+    const connectedNodeIds = getConnectedNodeIds(nodeId, connections);
+
+    // Обновить skillTree для всех связанных нод
+    for (const id of connectedNodeIds) {
+      updateNode(id, { skillTree: newSkillTree });
     }
   };
 

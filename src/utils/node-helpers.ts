@@ -1,14 +1,22 @@
-import { NODE_RADIUS_LARGE, NODE_RADIUS_MASTER, NODE_RADIUS_SMALL } from '@/constants';
+import {
+  NODE_RADIUS_EXTRALARGE,
+  NODE_RADIUS_LARGE,
+  NODE_RADIUS_MEDIUM,
+  NODE_RADIUS_SMALL,
+} from '@/constants';
 
 import { EditorConnections, NodeType } from '../types';
 
 export function getNodeRadius(type: NodeType): number {
   switch (type) {
+    case NodeType.MediumNode: {
+      return NODE_RADIUS_MEDIUM;
+    }
     case NodeType.LargeNode: {
       return NODE_RADIUS_LARGE;
     }
-    case NodeType.MasterNode: {
-      return NODE_RADIUS_MASTER;
+    case NodeType.ExtraLargeNode: {
+      return NODE_RADIUS_EXTRALARGE;
     }
     default: {
       return NODE_RADIUS_SMALL;

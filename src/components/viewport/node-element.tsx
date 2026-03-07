@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { Circle, Group, Image } from 'react-konva';
 import useImage from 'use-image';
 
+import extraLargeNodeBorder from '@/assets/extralarge-node-border.png';
 import largeNodeBorder from '@/assets/large-node-border.png';
-import masterNodeBorder from '@/assets/master-node-border.png';
+import mediumNodeBorder from '@/assets/medium-node-border.png';
 import smallNodeBorder from '@/assets/small-node-border.png';
 import { NODE_ICON_SIZE_PERCENT, SELECTION_COLOR, VIEWPORT_BACKGROUND_COLOR } from '@/constants';
 import { useStore } from '@/store';
@@ -15,8 +16,9 @@ import { findClosestOrbitSnapPoint } from '@/utils/orbit-helpers';
 
 const nodeBorderImages: Record<NodeType, string> = {
   [NodeType.SmallNode]: smallNodeBorder,
+  [NodeType.MediumNode]: mediumNodeBorder,
   [NodeType.LargeNode]: largeNodeBorder,
-  [NodeType.MasterNode]: masterNodeBorder,
+  [NodeType.ExtraLargeNode]: extraLargeNodeBorder,
 };
 
 type NodeElementProps = {

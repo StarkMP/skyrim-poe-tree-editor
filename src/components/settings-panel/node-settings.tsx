@@ -17,8 +17,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { VirtualizedCombobox } from '@/components/ui/virtualized-combobox';
 import {
   NODE_ICON_SIZE_PERCENT,
+  NODE_RADIUS_EXTRALARGE,
   NODE_RADIUS_LARGE,
-  NODE_RADIUS_MASTER,
+  NODE_RADIUS_MEDIUM,
   NODE_RADIUS_SMALL,
   SKILL_TREE_LABEL,
 } from '@/constants';
@@ -95,11 +96,14 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
       case NodeType.SmallNode: {
         return NODE_RADIUS_SMALL * 2 * NODE_ICON_SIZE_PERCENT;
       }
+      case NodeType.MediumNode: {
+        return NODE_RADIUS_MEDIUM * 2 * NODE_ICON_SIZE_PERCENT;
+      }
       case NodeType.LargeNode: {
         return NODE_RADIUS_LARGE * 2 * NODE_ICON_SIZE_PERCENT;
       }
-      case NodeType.MasterNode: {
-        return NODE_RADIUS_MASTER * 2 * NODE_ICON_SIZE_PERCENT;
+      case NodeType.ExtraLargeNode: {
+        return NODE_RADIUS_EXTRALARGE * 2 * NODE_ICON_SIZE_PERCENT;
       }
       default: {
         return NODE_RADIUS_SMALL * 2 * NODE_ICON_SIZE_PERCENT;
@@ -214,8 +218,9 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={NodeType.SmallNode.toString()}>Малая нода</SelectItem>
+                <SelectItem value={NodeType.MediumNode.toString()}>Средняя нода</SelectItem>
                 <SelectItem value={NodeType.LargeNode.toString()}>Большая нода</SelectItem>
-                <SelectItem value={NodeType.MasterNode.toString()}>Мастер нода</SelectItem>
+                <SelectItem value={NodeType.ExtraLargeNode.toString()}>Огромная нода</SelectItem>
               </SelectContent>
             </Select>
           </div>

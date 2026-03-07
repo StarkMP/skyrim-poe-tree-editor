@@ -1,8 +1,9 @@
 export const MOUSE_WHEEL_BTN_INDEX = 4 as const;
 
 export const NODE_RADIUS_SMALL = 24 as const;
-export const NODE_RADIUS_LARGE = 36 as const;
-export const NODE_RADIUS_MASTER = 48 as const;
+export const NODE_RADIUS_MEDIUM = 36 as const;
+export const NODE_RADIUS_LARGE = 48 as const;
+export const NODE_RADIUS_EXTRALARGE = 60 as const;
 export const NODE_STROKE_WIDTH = 8 as const;
 export const NODE_ICON_SIZE_PERCENT = 0.75 as const;
 

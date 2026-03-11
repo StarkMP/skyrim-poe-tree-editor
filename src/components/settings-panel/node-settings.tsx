@@ -18,9 +18,11 @@ import { VirtualizedCombobox } from '@/components/ui/virtualized-combobox';
 import {
   NODE_ICON_SIZE_PERCENT,
   NODE_RADIUS_EXTRALARGE,
+  NODE_RADIUS_EXTRASMALL,
   NODE_RADIUS_LARGE,
   NODE_RADIUS_MEDIUM,
   NODE_RADIUS_SMALL,
+  NODE_RADIUS_SUPERLARGE,
   SKILL_TREE_LABEL,
 } from '@/constants';
 import { useStore } from '@/store';
@@ -93,6 +95,9 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
 
   const getRequiredIconSize = (nodeType: NodeType): number => {
     switch (nodeType) {
+      case NodeType.ExtraSmallNode: {
+        return NODE_RADIUS_EXTRASMALL * 2 * NODE_ICON_SIZE_PERCENT;
+      }
       case NodeType.SmallNode: {
         return NODE_RADIUS_SMALL * 2 * NODE_ICON_SIZE_PERCENT;
       }
@@ -105,8 +110,11 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
       case NodeType.ExtraLargeNode: {
         return NODE_RADIUS_EXTRALARGE * 2 * NODE_ICON_SIZE_PERCENT;
       }
+      case NodeType.SuperLargeNode: {
+        return NODE_RADIUS_SUPERLARGE * 2 * NODE_ICON_SIZE_PERCENT;
+      }
       default: {
-        return NODE_RADIUS_SMALL * 2 * NODE_ICON_SIZE_PERCENT;
+        return NODE_RADIUS_EXTRASMALL * 2 * NODE_ICON_SIZE_PERCENT;
       }
     }
   };
@@ -217,10 +225,12 @@ export const NodeSettings = ({ nodeId, node }: NodeSettingsProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value={NodeType.ExtraSmallNode.toString()}>Крошечная нода</SelectItem>
                 <SelectItem value={NodeType.SmallNode.toString()}>Малая нода</SelectItem>
                 <SelectItem value={NodeType.MediumNode.toString()}>Средняя нода</SelectItem>
                 <SelectItem value={NodeType.LargeNode.toString()}>Большая нода</SelectItem>
                 <SelectItem value={NodeType.ExtraLargeNode.toString()}>Огромная нода</SelectItem>
+                <SelectItem value={NodeType.SuperLargeNode.toString()}>Гигантская нода</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -31,10 +31,12 @@ export const enum SkillTree {
 }
 
 export const enum NodeType {
-  SmallNode = 0,
-  MediumNode = 1,
-  LargeNode = 2,
-  ExtraLargeNode = 3,
+  ExtraSmallNode = 0,
+  SmallNode = 1,
+  MediumNode = 2,
+  LargeNode = 3,
+  ExtraLargeNode = 4,
+  SuperLargeNode = 5,
 }
 
 export type EditorNode = {

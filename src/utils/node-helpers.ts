@@ -1,14 +1,19 @@
 import {
   NODE_RADIUS_EXTRALARGE,
+  NODE_RADIUS_EXTRASMALL,
   NODE_RADIUS_LARGE,
   NODE_RADIUS_MEDIUM,
   NODE_RADIUS_SMALL,
+  NODE_RADIUS_SUPERLARGE,
 } from '@/constants';
 
 import { EditorConnections, NodeType } from '../types';
 
 export function getNodeRadius(type: NodeType): number {
   switch (type) {
+    case NodeType.SmallNode: {
+      return NODE_RADIUS_SMALL;
+    }
     case NodeType.MediumNode: {
       return NODE_RADIUS_MEDIUM;
     }
@@ -18,8 +23,11 @@ export function getNodeRadius(type: NodeType): number {
     case NodeType.ExtraLargeNode: {
       return NODE_RADIUS_EXTRALARGE;
     }
+    case NodeType.SuperLargeNode: {
+      return NODE_RADIUS_SUPERLARGE;
+    }
     default: {
-      return NODE_RADIUS_SMALL;
+      return NODE_RADIUS_EXTRASMALL;
     }
   }
 }

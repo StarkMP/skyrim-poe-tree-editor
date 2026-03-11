@@ -2,9 +2,11 @@ import JSZip from 'jszip';
 import { useState } from 'react';
 
 import extraLargeNodeBorder from '@/assets/extralarge-node-border.png';
+import extraSmallNodeBorder from '@/assets/extrasmall-node-border.png';
 import largeNodeBorder from '@/assets/large-node-border.png';
 import mediumNodeBorder from '@/assets/medium-node-border.png';
 import smallNodeBorder from '@/assets/small-node-border.png';
+import superLargeNodeBorder from '@/assets/superlarge-node-border.png';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,10 +24,12 @@ import { getNodeRadius } from '@/utils/node-helpers';
 import { AtlasNode, loadImage, packTextureAtlas } from '@/utils/texture-atlas';
 
 const nodeBorderImages: Record<NodeType, string> = {
+  [NodeType.ExtraSmallNode]: extraSmallNodeBorder,
   [NodeType.SmallNode]: smallNodeBorder,
   [NodeType.MediumNode]: mediumNodeBorder,
   [NodeType.LargeNode]: largeNodeBorder,
   [NodeType.ExtraLargeNode]: extraLargeNodeBorder,
+  [NodeType.SuperLargeNode]: superLargeNodeBorder,
 };
 
 type ExportDialogProps = {

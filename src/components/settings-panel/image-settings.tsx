@@ -10,6 +10,9 @@ import { useStore } from '@/store';
 import { EditorImage } from '@/types';
 import { uploadIconToS3 } from '@/utils/s3-upload';
 
+const MAX_IMAGE_WIDTH = 8000;
+const MAX_IMAGE_HEIGHT = 8000;
+
 type ImageSettingsProps = {
   imageId: string;
   image: EditorImage;
@@ -30,14 +33,14 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
 
   const handleWidthChange = (value: string) => {
     const width = Number.parseInt(value);
-    const currentWidth = Math.min(width, 2000);
+    const currentWidth = Math.min(width, MAX_IMAGE_WIDTH);
 
     updateImage(imageId, { width: currentWidth ?? 0 });
   };
 
   const handleHeightChange = (value: string) => {
     const height = Number.parseInt(value);
-    const currentHeight = Math.min(height, 2000);
+    const currentHeight = Math.min(height, MAX_IMAGE_HEIGHT);
 
     updateImage(imageId, { height: currentHeight ?? 0 });
   };
@@ -108,8 +111,8 @@ export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
 
     try {
       const imageUrl = await uploadIconToS3(selectedFile, s3SecretKey, {
-        maxWidth: 2000,
-        maxHeight: 2000,
+        maxWidth: MAX_IMAGE_WIDTH,
+        maxHeight: MAX_IMAGE_HEIGHT,
       });
       updateImage(imageId, { imageUrl });
       setSelectedFile(null);

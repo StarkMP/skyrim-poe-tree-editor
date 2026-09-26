@@ -1,19 +1,24 @@
-import { Hexagon, Image, Link2Off, Orbit, Spline, Trash2 } from 'lucide-react';
+import { Gem, Hexagon, Image, Link2Off, Orbit, Spline, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+
+import { ElementType } from '@/store';
 
 type ContextMenuProps = {
   x: number;
   y: number;
   targetId?: string;
-  targetType?: 'node' | 'image' | 'orbit';
+  targetType?: ElementType;
+  hasStoneSelection: boolean;
   onCreateNode: () => void;
   onCreateImage: () => void;
   onCreateOrbit: () => void;
+  onCreateStoneSelection: () => void;
   onStartConnection: (nodeId: string) => void;
   onRemoveAllConnections: (nodeId: string) => void;
   onDeleteNode: (nodeId: string) => void;
   onDeleteImage: (imageId: string) => void;
   onDeleteOrbit: (orbitId: string) => void;
+  onDeleteStoneSelection: () => void;
   onClose: () => void;
 };
 
@@ -22,14 +27,17 @@ export const ContextMenu = ({
   y,
   targetId,
   targetType,
+  hasStoneSelection,
   onCreateNode,
   onCreateImage,
   onCreateOrbit,
+  onCreateStoneSelection,
   onStartConnection,
   onRemoveAllConnections,
   onDeleteNode,
   onDeleteImage,
   onDeleteOrbit,
+  onDeleteStoneSelection,
   onClose,
 }: ContextMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -86,6 +94,15 @@ export const ContextMenu = ({
             <Orbit size={16} />
             Создать орбиту позиций
           </button>
+          {hasStoneSelection ? null : (
+            <button
+              className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm hover:bg-accent transition-colors"
+              onClick={() => handleItemClick(onCreateStoneSelection)}
+            >
+              <Gem size={16} />
+              Создать выбор камня
+            </button>
+          )}
         </>
       );
     }
@@ -139,6 +156,17 @@ export const ContextMenu = ({
           >
             <Trash2 size={16} />
             Удалить орбиту
+          </button>
+        );
+      }
+      case 'stone': {
+        return (
+          <button
+            className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-destructive hover:bg-accent transition-colors"
+            onClick={() => handleItemClick(onDeleteStoneSelection)}
+          >
+            <Trash2 size={16} />
+            Удалить выбор камня
           </button>
         );
       }

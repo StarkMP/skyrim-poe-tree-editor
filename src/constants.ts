@@ -63,6 +63,12 @@ export const ORBIT_LINE_COLOR = 'rgba(155, 155, 215, 0.2)' as const;
 
 export const IMAGE_BORDER_INACTIVE = '#404040' as const;
 
+export const STONE_SELECTION_ID = 'stone-selection' as const;
+export const STONE_DEFAULT_WIDTH = 200 as const;
+export const STONE_DEFAULT_HEIGHT = 200 as const;
+export const STONE_BORDER_INACTIVE = '#8B7355' as const;
+export const STONE_SELECTION_FILENAME = 'stone-selection.png' as const;
+
 import { SkillTree } from './types';
 
 export const SKILL_TREE_LABEL: Record<SkillTree, string> = {

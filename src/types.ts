@@ -74,6 +74,14 @@ export type EditorImage = {
 
 export type EditorImages = { [uid: string]: EditorImage };
 
+export type EditorStoneSelection = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  imageUrl?: string;
+};
+
 export type ViewportState = {
   x: number;
   y: number;
@@ -110,6 +118,7 @@ export type EditorData = {
   images: EditorImages;
   orbits?: EditorOrbits;
   connections?: EditorConnections;
+  stoneSelection?: EditorStoneSelection | null;
   viewport?: ViewportState;
   gridSettings?: GridSettings;
   webSettings?: WebSettings;
@@ -135,6 +144,14 @@ export type ExportNode = {
 
 export type ExportNodes = { [uid: EditorNode['perkId']]: ExportNode };
 
+export type ExportStoneSelection = {
+  defaultImageFilename?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type ExportData = {
   width: number;
   height: number;
@@ -148,6 +165,7 @@ export type ExportData = {
     height: number;
     rotation?: number;
   }>;
+  stoneSelection?: ExportStoneSelection | null;
 };
 
 export type ImportData = EditorData;

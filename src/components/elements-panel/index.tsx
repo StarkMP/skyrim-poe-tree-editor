@@ -1,16 +1,18 @@
-import { Hexagon, Image, Orbit, Search, Trash2 } from 'lucide-react';
+import { Gem, Hexagon, Image, Orbit, Search, Trash2 } from 'lucide-react';
 import List from 'rc-virtual-list';
 import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useStore } from '@/store';
+import { STONE_SELECTION_ID } from '@/constants';
+import { ElementType, useStore } from '@/store';
 
 const iconByType = {
   node: <Hexagon size={16} />,
   image: <Image size={16} />,
   orbit: <Orbit size={16} />,
+  stone: <Gem size={16} />,
 } as const;
 
 export const ElementsPanel = () => {
@@ -18,11 +20,13 @@ export const ElementsPanel = () => {
     nodes,
     images,
     orbits,
+    stoneSelection,
     selectedElement,
     selectElement,
     deleteNode,
     deleteImage,
     deleteOrbit,
+    deleteStoneSelection,
     requestCenterOnElement,
   } = useStore();
   const parentRef = useRef<HTMLDivElement | null>(null);
@@ -31,7 +35,7 @@ export const ElementsPanel = () => {
 
   const elements: Array<{
     id: string;
-    type: 'node' | 'image' | 'orbit';
+    type: ElementType;
     label: string;
     perkId?: string;
   }> = [
@@ -51,6 +55,15 @@ export const ElementsPanel = () => {
       type: 'orbit' as const,
       label: `Орбита позиций (${id.slice(0, 8)})`,
     })),
+    ...(stoneSelection
+      ? [
+          {
+            id: STONE_SELECTION_ID,
+            type: 'stone' as const,
+            label: 'Выбор камня',
+          },
+        ]
+      : []),
   ];
 
   const filteredElements = elements.filter((element) => {
@@ -60,18 +73,33 @@ export const ElementsPanel = () => {
     return matchesLabel || matchesPerkId;
   });
 
-  const handleCenterOnElement = (id: string, type: 'node' | 'image' | 'orbit') => {
+  const handleCenterOnElement = (id: string, type: ElementType) => {
     selectElement(id, type);
     requestCenterOnElement(id, type);
   };
 
-  const handleDelete = (id: string, type: 'node' | 'image' | 'orbit') => {
-    if (type === 'node') {
-      deleteNode(id);
-    } else if (type === 'image') {
-      deleteImage(id);
-    } else {
-      deleteOrbit(id);
+  const handleDelete = (id: string, type: ElementType) => {
+    switch (type) {
+      case 'node': {
+        deleteNode(id);
+
+        break;
+      }
+      case 'image': {
+        deleteImage(id);
+
+        break;
+      }
+      case 'orbit': {
+        deleteOrbit(id);
+
+        break;
+      }
+      case 'stone': {
+        deleteStoneSelection();
+
+        break;
+      }
     }
   };
 

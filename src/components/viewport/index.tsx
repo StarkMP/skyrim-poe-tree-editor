@@ -3,8 +3,14 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 import { useEffect, useRef, useState } from 'react';
 import { Layer, Stage } from 'react-konva';
 
-import { MAX_ZOOM, MIN_ZOOM, VIEWPORT_WORLD_SIZE, ZOOM_SPEED } from '@/constants';
-import { useStore } from '@/store';
+import {
+  MAX_ZOOM,
+  MIN_ZOOM,
+  STONE_SELECTION_ID,
+  VIEWPORT_WORLD_SIZE,
+  ZOOM_SPEED,
+} from '@/constants';
+import { ElementType, useStore } from '@/store';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
 
 import { BackgroundImage } from './background-image';
@@ -13,6 +19,7 @@ import { ContextMenu } from './context-menu';
 import { GridLayer } from './grid-layer';
 import { NodeElement } from './node-element';
 import { OrbitElement } from './orbit-element';
+import { StoneSelectionElement } from './stone-selection-element';
 import { TempConnectionLine } from './temp-connection-line';
 import { WebLayer } from './web-layer';
 
@@ -30,7 +37,7 @@ export const Viewport = () => {
     canvasX: number;
     canvasY: number;
     targetId?: string;
-    targetType?: 'node' | 'image' | 'orbit';
+    targetType?: 'node' | 'image' | 'orbit' | 'stone';
   } | null>(null);
 
   const [isCreatingConnection, setIsCreatingConnection] = useState(false);
@@ -54,6 +61,7 @@ export const Viewport = () => {
     nodes,
     images,
     orbits,
+    stoneSelection,
     connections,
     selectedElement,
     selectedElements,
@@ -68,9 +76,11 @@ export const Viewport = () => {
     addNode,
     addImage,
     addOrbit,
+    addStoneSelection,
     deleteNode,
     deleteImage,
     deleteOrbit,
+    deleteStoneSelection,
     addConnection,
     removeAllConnections,
     updateViewport,
@@ -115,6 +125,9 @@ export const Viewport = () => {
     } else if (type === 'orbit' && orbits[id]) {
       elementX = orbits[id].x;
       elementY = orbits[id].y;
+    } else if (type === 'stone' && stoneSelection) {
+      elementX = stoneSelection.x + stoneSelection.width / 2;
+      elementY = stoneSelection.y + stoneSelection.height / 2;
     } else {
       return;
     }
@@ -335,6 +348,55 @@ export const Viewport = () => {
     setContextMenu(null);
   };
 
+  const handleCreateStoneSelection = () => {
+    if (contextMenu) {
+      let x = contextMenu.canvasX;
+      let y = contextMenu.canvasY;
+
+      if (gridSettings.enabled) {
+        const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
+        x = snapped.x;
+        y = snapped.y;
+      }
+
+      addStoneSelection(x, y);
+      selectElement(STONE_SELECTION_ID, 'stone');
+    }
+    setContextMenu(null);
+  };
+
+  const handleDeleteStoneSelection = () => {
+    deleteStoneSelection();
+    setContextMenu(null);
+  };
+
+  const handleStoneClick = (e?: MouseEvent) => {
+    const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
+    if (isMultiSelectKey) {
+      if (
+        selectedElement &&
+        !selectedElements.has(selectedElement.id) &&
+        selectedElement.type !== 'connection'
+      ) {
+        toggleElementSelection(selectedElement.id, selectedElement.type as ElementType);
+      }
+      toggleElementSelection(STONE_SELECTION_ID, 'stone');
+    } else {
+      selectElement(STONE_SELECTION_ID, 'stone');
+    }
+  };
+
+  const handleStoneContextMenu = (x: number, y: number) => {
+    setContextMenu({
+      x,
+      y,
+      canvasX: 0,
+      canvasY: 0,
+      targetId: STONE_SELECTION_ID,
+      targetType: 'stone',
+    });
+  };
+
   const handleOrbitClick = (orbitId: string, e?: MouseEvent) => {
     const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
     if (isMultiSelectKey) {
@@ -343,10 +405,7 @@ export const Viewport = () => {
         !selectedElements.has(selectedElement.id) &&
         selectedElement.type !== 'connection'
       ) {
-        toggleElementSelection(
-          selectedElement.id,
-          selectedElement.type as 'node' | 'image' | 'orbit'
-        );
+        toggleElementSelection(selectedElement.id, selectedElement.type as ElementType);
       }
       toggleElementSelection(orbitId, 'orbit');
     } else {
@@ -378,10 +437,7 @@ export const Viewport = () => {
           !selectedElements.has(selectedElement.id) &&
           selectedElement.type !== 'connection'
         ) {
-          toggleElementSelection(
-            selectedElement.id,
-            selectedElement.type as 'node' | 'image' | 'orbit'
-          );
+          toggleElementSelection(selectedElement.id, selectedElement.type as ElementType);
         }
         toggleElementSelection(nodeId, 'node');
       } else {
@@ -398,10 +454,7 @@ export const Viewport = () => {
         !selectedElements.has(selectedElement.id) &&
         selectedElement.type !== 'connection'
       ) {
-        toggleElementSelection(
-          selectedElement.id,
-          selectedElement.type as 'node' | 'image' | 'orbit'
-        );
+        toggleElementSelection(selectedElement.id, selectedElement.type as ElementType);
       }
       toggleElementSelection(imageId, 'image');
     } else {
@@ -447,6 +500,8 @@ export const Viewport = () => {
         startPositions.set(id, { x: images[id].x, y: images[id].y });
       } else if (elementData.type === 'orbit' && orbits[id]) {
         startPositions.set(id, { x: orbits[id].x, y: orbits[id].y });
+      } else if (elementData.type === 'stone' && stoneSelection) {
+        startPositions.set(id, { x: stoneSelection.x, y: stoneSelection.y });
       }
     }
 
@@ -465,7 +520,7 @@ export const Viewport = () => {
 
     const updates: Array<{
       id: string;
-      type: 'node' | 'image' | 'orbit';
+      type: ElementType;
       updates: { x: number; y: number };
     }> = [];
 
@@ -503,7 +558,7 @@ export const Viewport = () => {
 
     const updates: Array<{
       id: string;
-      type: 'node' | 'image' | 'orbit';
+      type: ElementType;
       updates: { x: number; y: number };
     }> = [];
 
@@ -610,6 +665,41 @@ export const Viewport = () => {
                 }}
               />
             ))}
+
+            {/* Stone Selection (single instance, above background images) */}
+            {stoneSelection ? (
+              <StoneSelectionElement
+                stone={stoneSelection}
+                isSelected={
+                  isMultiSelectMode
+                    ? isElementSelected(STONE_SELECTION_ID)
+                    : selectedElement?.id === STONE_SELECTION_ID
+                      ? selectedElement?.type === 'stone'
+                      : null
+                }
+                onSelect={(e) => handleStoneClick(e?.evt)}
+                onContextMenu={handleStoneContextMenu}
+                onDragStart={() => {
+                  if (isMultiSelectMode && isElementSelected(STONE_SELECTION_ID)) {
+                    handleMultiDragStart(STONE_SELECTION_ID);
+                  } else {
+                    setIsDraggingElement(true);
+                  }
+                }}
+                onDragMove={(pos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === STONE_SELECTION_ID) {
+                    handleMultiDragMove(STONE_SELECTION_ID, pos);
+                  }
+                }}
+                onDragEnd={(finalPos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === STONE_SELECTION_ID) {
+                    handleMultiDragEnd(STONE_SELECTION_ID, finalPos);
+                  } else {
+                    setIsDraggingElement(false);
+                  }
+                }}
+              />
+            ) : null}
 
             {/* Connections - middle z-index (hide if node is being dragged) */}
             {Object.entries(connections).map(([connectionId, connection]) => {
@@ -790,14 +880,17 @@ export const Viewport = () => {
           y={contextMenu.y}
           targetId={contextMenu.targetId}
           targetType={contextMenu.targetType}
+          hasStoneSelection={!!stoneSelection}
           onCreateNode={handleCreateNode}
           onCreateImage={handleCreateImage}
           onCreateOrbit={handleCreateOrbit}
+          onCreateStoneSelection={handleCreateStoneSelection}
           onStartConnection={handleStartConnection}
           onRemoveAllConnections={handleRemoveAllConnections}
           onDeleteNode={handleDeleteNode}
           onDeleteImage={handleDeleteImage}
           onDeleteOrbit={handleDeleteOrbit}
+          onDeleteStoneSelection={handleDeleteStoneSelection}
           onClose={() => setContextMenu(null)}
         />
       ) : null}

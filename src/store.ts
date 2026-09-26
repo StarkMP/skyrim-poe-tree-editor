@@ -5,6 +5,9 @@ import {
   ORBIT_DEFAULT_POINTS,
   ORBIT_DEFAULT_RADIUS,
   ORBIT_DEFAULT_ROTATION,
+  STONE_DEFAULT_HEIGHT,
+  STONE_DEFAULT_WIDTH,
+  STONE_SELECTION_ID,
   WEB_DEFAULT_CONCENTRIC_CIRCLES,
   WEB_DEFAULT_INNER_RADIUS,
   WEB_DEFAULT_ROTATION,
@@ -21,6 +24,7 @@ import {
   EditorNode,
   EditorNodes,
   EditorOrbits,
+  EditorStoneSelection,
   GamePerksData,
   GridSettings,
   NodeType,
@@ -47,6 +51,7 @@ const debouncedSaveToLocalStorage = (state: Store) => {
       images: state.images,
       orbits: state.orbits,
       connections: state.connections,
+      stoneSelection: state.stoneSelection,
       viewport: state.viewport,
       gridSettings: state.gridSettings,
       webSettings: state.webSettings,
@@ -56,19 +61,23 @@ const debouncedSaveToLocalStorage = (state: Store) => {
   }, SAVE_DEBOUNCE_MS);
 };
 
+export type ElementType = 'node' | 'image' | 'orbit' | 'stone';
+
+export type SelectableType = ElementType | 'connection';
+
 type SelectedElement = {
   id: string;
-  type: 'node' | 'image' | 'orbit' | 'connection';
+  type: SelectableType;
 } | null;
 
 type MultiSelectedElement = {
   id: string;
-  type: 'node' | 'image' | 'orbit';
+  type: ElementType;
 };
 
 type ViewportCenterRequest = {
   id: string;
-  type: 'node' | 'image' | 'orbit';
+  type: ElementType;
   timestamp: number;
 } | null;
 
@@ -85,12 +94,16 @@ type UndoAction =
   | { type: 'UPDATE_IMAGE'; imageId: string; previousData: Partial<EditorImage> }
   | { type: 'ADD_ORBIT'; orbitId: string }
   | { type: 'DELETE_ORBIT'; orbitId: string; orbitData: PositionOrbit }
-  | { type: 'UPDATE_ORBIT'; orbitId: string; previousData: Partial<PositionOrbit> };
+  | { type: 'UPDATE_ORBIT'; orbitId: string; previousData: Partial<PositionOrbit> }
+  | { type: 'ADD_STONE' }
+  | { type: 'DELETE_STONE'; stoneData: EditorStoneSelection }
+  | { type: 'UPDATE_STONE'; previousData: Partial<EditorStoneSelection> };
 
 export type Store = {
   nodes: EditorNodes;
   images: EditorImages;
   orbits: EditorOrbits;
+  stoneSelection: EditorStoneSelection | null;
   connections: EditorConnections;
   gamePerks: GamePerksData;
   gamePerkIdsSet: Set<string>;
@@ -125,23 +138,28 @@ export type Store = {
   updateOrbit: (id: string, updates: Partial<PositionOrbit>) => void;
   deleteOrbit: (id: string) => void;
 
-  selectElement: (
-    id: string | null,
-    type: 'node' | 'image' | 'orbit' | 'connection' | null
-  ) => void;
-  toggleElementSelection: (id: string, type: 'node' | 'image' | 'orbit') => void;
+  addStoneSelection: (x: number, y: number) => void;
+  updateStoneSelection: (updates: Partial<EditorStoneSelection>) => void;
+  deleteStoneSelection: () => void;
+
+  selectElement: (id: string | null, type: SelectableType | null) => void;
+  toggleElementSelection: (id: string, type: ElementType) => void;
   clearSelection: () => void;
   isElementSelected: (id: string) => boolean;
 
   updateMultipleElements: (
     updates: Array<{
       id: string;
-      type: 'node' | 'image' | 'orbit';
-      updates: Partial<EditorNode> | Partial<EditorImage> | Partial<PositionOrbit>;
+      type: ElementType;
+      updates:
+        | Partial<EditorNode>
+        | Partial<EditorImage>
+        | Partial<PositionOrbit>
+        | Partial<EditorStoneSelection>;
     }>
   ) => void;
 
-  requestCenterOnElement: (id: string, type: 'node' | 'image' | 'orbit') => void;
+  requestCenterOnElement: (id: string, type: ElementType) => void;
   clearCenterRequest: () => void;
   updateViewport: (viewport: ViewportState) => void;
 
@@ -196,6 +214,13 @@ const createDefaultOrbit = (x: number, y: number): PositionOrbit => ({
   rotation: ORBIT_DEFAULT_ROTATION,
 });
 
+const createDefaultStoneSelection = (x: number, y: number): EditorStoneSelection => ({
+  x,
+  y,
+  width: STONE_DEFAULT_WIDTH,
+  height: STONE_DEFAULT_HEIGHT,
+});
+
 const pushUndoAction = (state: Store, action: UndoAction) => {
   const newStack = [...state.undoStack, action];
 
@@ -223,6 +248,7 @@ const loadInitialData = () => {
     images: {},
     orbits: {},
     connections: {},
+    stoneSelection: null as EditorStoneSelection | null,
     viewport: DEFAULT_VIEWPORT,
     gridSettings: DEFAULT_GRID_SETTINGS,
     webSettings: DEFAULT_WEB_SETTINGS,
@@ -240,6 +266,7 @@ const loadInitialData = () => {
       images: data.images || defaults.images,
       orbits: data.orbits || defaults.orbits,
       connections: data.connections || defaults.connections,
+      stoneSelection: data.stoneSelection ?? defaults.stoneSelection,
       viewport: data.viewport || defaults.viewport,
       gridSettings: data.gridSettings || defaults.gridSettings,
       webSettings: data.webSettings || defaults.webSettings,
@@ -260,6 +287,7 @@ export const useStore = create<Store>((set, get) => {
     nodes: initialData.nodes,
     images: initialData.images,
     orbits: initialData.orbits,
+    stoneSelection: initialData.stoneSelection,
     connections: initialData.connections,
     gamePerks,
     gamePerkIdsSet: new Set(Object.keys(gamePerks)),
@@ -538,7 +566,53 @@ export const useStore = create<Store>((set, get) => {
       get().saveToLocalStorage();
     },
 
-    selectElement: (id: string | null, type: 'node' | 'image' | 'orbit' | 'connection' | null) => {
+    addStoneSelection: (x: number, y: number) => {
+      set((state) => {
+        // Stone selection is a single-instance element
+        if (state.stoneSelection) return state;
+
+        return {
+          ...pushUndoAction(state, { type: 'ADD_STONE' }),
+          stoneSelection: createDefaultStoneSelection(x, y),
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    updateStoneSelection: (updates: Partial<EditorStoneSelection>) => {
+      set((state) => {
+        const currentStone = state.stoneSelection;
+        if (!currentStone) return state;
+
+        const previousData: Partial<EditorStoneSelection> = {};
+        for (const key of Object.keys(updates) as Array<keyof EditorStoneSelection>) {
+          previousData[key] = currentStone[key] as any;
+        }
+
+        return {
+          ...pushUndoAction(state, { type: 'UPDATE_STONE', previousData }),
+          stoneSelection: { ...currentStone, ...updates },
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    deleteStoneSelection: () => {
+      set((state) => {
+        const stoneToDelete = state.stoneSelection;
+        if (!stoneToDelete) return state;
+
+        return {
+          ...pushUndoAction(state, { type: 'DELETE_STONE', stoneData: stoneToDelete }),
+          stoneSelection: null,
+          selectedElement:
+            state.selectedElement?.id === STONE_SELECTION_ID ? null : state.selectedElement,
+        };
+      });
+      get().saveToLocalStorage();
+    },
+
+    selectElement: (id: string | null, type: SelectableType | null) => {
       set({
         selectedElement: id && type ? { id, type } : null,
         selectedElements: new Set(),
@@ -546,7 +620,7 @@ export const useStore = create<Store>((set, get) => {
       });
     },
 
-    toggleElementSelection: (id: string, type: 'node' | 'image' | 'orbit') => {
+    toggleElementSelection: (id: string, type: ElementType) => {
       set((state) => {
         const newSelectedElements = new Set(state.selectedElements);
         const newMultiSelectedElementsData = new Map(state.multiSelectedElementsData);
@@ -583,14 +657,19 @@ export const useStore = create<Store>((set, get) => {
     updateMultipleElements: (
       updates: Array<{
         id: string;
-        type: 'node' | 'image' | 'orbit';
-        updates: Partial<EditorNode> | Partial<EditorImage> | Partial<PositionOrbit>;
+        type: ElementType;
+        updates:
+          | Partial<EditorNode>
+          | Partial<EditorImage>
+          | Partial<PositionOrbit>
+          | Partial<EditorStoneSelection>;
       }>
     ) => {
       set((state) => {
         const newNodes = { ...state.nodes };
         const newImages = { ...state.images };
         const newOrbits = { ...state.orbits };
+        let newStoneSelection = state.stoneSelection;
 
         for (const update of updates) {
           if (update.type === 'node' && newNodes[update.id]) {
@@ -602,6 +681,12 @@ export const useStore = create<Store>((set, get) => {
           } else if (update.type === 'orbit' && newOrbits[update.id]) {
             const currentOrbit = newOrbits[update.id];
             newOrbits[update.id] = { ...currentOrbit, ...update.updates };
+          } else if (
+            update.type === 'stone' &&
+            newStoneSelection &&
+            update.id === STONE_SELECTION_ID
+          ) {
+            newStoneSelection = { ...newStoneSelection, ...update.updates };
           }
         }
 
@@ -609,12 +694,13 @@ export const useStore = create<Store>((set, get) => {
           nodes: newNodes,
           images: newImages,
           orbits: newOrbits,
+          stoneSelection: newStoneSelection,
         };
       });
       debouncedSaveToLocalStorage(get());
     },
 
-    requestCenterOnElement: (id: string, type: 'node' | 'image' | 'orbit') => {
+    requestCenterOnElement: (id: string, type: ElementType) => {
       set({
         viewportCenterRequest: { id, type, timestamp: Date.now() },
       });
@@ -819,6 +905,29 @@ export const useStore = create<Store>((set, get) => {
           }
           break;
         }
+
+        case 'ADD_STONE': {
+          set({
+            stoneSelection: null,
+            selectedElement:
+              state.selectedElement?.id === STONE_SELECTION_ID ? null : state.selectedElement,
+          });
+          break;
+        }
+
+        case 'DELETE_STONE': {
+          set({ stoneSelection: action.stoneData });
+          break;
+        }
+
+        case 'UPDATE_STONE': {
+          if (state.stoneSelection) {
+            set({
+              stoneSelection: { ...state.stoneSelection, ...action.previousData },
+            });
+          }
+          break;
+        }
       }
 
       get().saveToLocalStorage();
@@ -835,6 +944,7 @@ export const useStore = create<Store>((set, get) => {
         images: data.images,
         orbits: data.orbits || {},
         connections: data.connections || {},
+        stoneSelection: data.stoneSelection ?? null,
         viewport: data.viewport || DEFAULT_VIEWPORT,
         gridSettings: data.gridSettings || DEFAULT_GRID_SETTINGS,
         selectedElement: null,
@@ -852,6 +962,7 @@ export const useStore = create<Store>((set, get) => {
         images: state.images,
         orbits: state.orbits,
         connections: state.connections,
+        stoneSelection: state.stoneSelection,
         viewport: state.viewport,
         gridSettings: state.gridSettings,
       };
@@ -863,6 +974,7 @@ export const useStore = create<Store>((set, get) => {
         images: {},
         orbits: {},
         connections: {},
+        stoneSelection: null,
         viewport: DEFAULT_VIEWPORT,
         gridSettings: DEFAULT_GRID_SETTINGS,
         selectedElement: null,
@@ -880,6 +992,7 @@ export const useStore = create<Store>((set, get) => {
         images: state.images,
         orbits: state.orbits,
         connections: state.connections,
+        stoneSelection: state.stoneSelection,
         viewport: state.viewport,
         gridSettings: state.gridSettings,
         webSettings: state.webSettings,
@@ -895,6 +1008,7 @@ export const useStore = create<Store>((set, get) => {
         images: data.images,
         orbits: data.orbits,
         connections: data.connections,
+        stoneSelection: data.stoneSelection,
         viewport: data.viewport,
         gridSettings: data.gridSettings,
         webSettings: data.webSettings,

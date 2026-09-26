@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
-import { ATLAS_SCALE_FACTOR } from '@/constants';
+import { ATLAS_SCALE_FACTOR, STONE_SELECTION_FILENAME } from '@/constants';
 import { useStore } from '@/store';
 import { Connection, ExportData, ExportNode, NodeType } from '@/types';
 import { getNodeRadius } from '@/utils/node-helpers';
@@ -47,6 +47,7 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
   const images = useStore((state) => state.images);
   const orbits = useStore((state) => state.orbits);
   const connections = useStore((state) => state.connections);
+  const stoneSelection = useStore((state) => state.stoneSelection);
   const viewport = useStore((state) => state.viewport);
   const gridSettings = useStore((state) => state.gridSettings);
   const webSettings = useStore((state) => state.webSettings);
@@ -137,6 +138,13 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       minY = Math.min(minY, image.y);
       maxX = Math.max(maxX, image.x + image.width);
       maxY = Math.max(maxY, image.y + image.height);
+    }
+
+    if (stoneSelection) {
+      minX = Math.min(minX, stoneSelection.x);
+      minY = Math.min(minY, stoneSelection.y);
+      maxX = Math.max(maxX, stoneSelection.x + stoneSelection.width);
+      maxY = Math.max(maxY, stoneSelection.y + stoneSelection.height);
     }
 
     const padding = 50;
@@ -264,10 +272,62 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
     return backgroundImages;
   };
 
+  const generateStoneSelectionImage = async (bounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }): Promise<{
+    blob: Blob;
+    filename: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null> => {
+    if (!stoneSelection?.imageUrl) return null;
+
+    try {
+      const img = await loadImage(stoneSelection.imageUrl);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = stoneSelection.width;
+      canvas.height = stoneSelection.height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Failed to get canvas context');
+
+      ctx.drawImage(img, 0, 0, stoneSelection.width, stoneSelection.height);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to generate blob from canvas'));
+          }
+        }, 'image/png');
+      });
+
+      return {
+        blob,
+        filename: STONE_SELECTION_FILENAME,
+        x: stoneSelection.x - bounds.x,
+        y: stoneSelection.y - bounds.y,
+        width: stoneSelection.width,
+        height: stoneSelection.height,
+      };
+    } catch {
+      console.error(`Failed to load stone selection image: ${stoneSelection.imageUrl}`);
+      return null;
+    }
+  };
+
   const createGameFilesZip = async (
     gameDataBlob: Blob,
     textureAtlasBlob: Blob,
-    backgroundImages: Array<{ blob: Blob; filename: string }>
+    backgroundImages: Array<{ blob: Blob; filename: string }>,
+    stoneImage: { blob: Blob; filename: string } | null
   ): Promise<Blob> => {
     const zip = new JSZip();
 
@@ -277,6 +337,10 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
 
     for (const bgImage of backgroundImages) {
       zip.file(bgImage.filename, bgImage.blob);
+    }
+
+    if (stoneImage) {
+      zip.file(stoneImage.filename, stoneImage.blob);
     }
 
     return await zip.generateAsync({ type: 'blob' });
@@ -301,11 +365,14 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
 
       const backgroundImages = await generateBackgroundImages(bounds);
 
+      const stoneImage = await generateStoneSelectionImage(bounds);
+
       const editorData = {
         nodes,
         images,
         orbits,
         connections,
+        stoneSelection,
         viewport,
         gridSettings,
         webSettings,
@@ -377,6 +444,15 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
           height: bg.height,
           rotation: bg.rotation,
         })),
+        stoneSelection: stoneSelection
+          ? {
+              defaultImageFilename: stoneImage?.filename,
+              x: stoneSelection.x - bounds.x,
+              y: stoneSelection.y - bounds.y,
+              width: stoneSelection.width,
+              height: stoneSelection.height,
+            }
+          : null,
       };
 
       const gameDataBlob = new Blob([JSON.stringify(gameData, null, 2)], {
@@ -386,7 +462,8 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       const gameFilesZipBlob = await createGameFilesZip(
         gameDataBlob,
         textureAtlasBlob,
-        backgroundImages
+        backgroundImages,
+        stoneImage
       );
       const gameFilesZipUrl = URL.createObjectURL(gameFilesZipBlob);
 

@@ -23,6 +23,7 @@ import { ImageSettings } from './image-settings';
 import { ImportDialog } from './import-dialog';
 import { NodeSettings } from './node-settings';
 import { OrbitSettings } from './orbit-settings';
+import { StoneSelectionSettings } from './stone-selection-settings';
 
 export const SettingsPanel = () => {
   const {
@@ -32,6 +33,7 @@ export const SettingsPanel = () => {
     images,
     orbits,
     connections,
+    stoneSelection,
     clearAll,
     setS3SecretKey,
   } = useStore();
@@ -119,6 +121,8 @@ export const SettingsPanel = () => {
               <ImageSettings imageId={selectedElement.id} image={selectedImage} />
             ) : selectedOrbit && selectedElement ? (
               <OrbitSettings orbitId={selectedElement.id} orbit={selectedOrbit} />
+            ) : stoneSelection && selectedElement?.type === 'stone' ? (
+              <StoneSelectionSettings stone={stoneSelection} />
             ) : selectedConnection && selectedElement ? (
               <ConnectionSettings
                 connectionId={selectedElement.id}

@@ -7,7 +7,7 @@ export const NODE_RADIUS_LARGE = 72 as const;
 export const NODE_RADIUS_EXTRALARGE = 96 as const;
 export const NODE_RADIUS_SUPERLARGE = 120 as const;
 export const NODE_STROKE_WIDTH = 8 as const;
-export const NODE_ICON_SIZE_PERCENT = 0.75 as const;
+export const NODE_ICON_SIZE_PERCENT = 0.88 as const;
 
 export const ATLAS_SCALE_FACTOR = 1.5 as const;
 

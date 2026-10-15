@@ -255,41 +255,6 @@ export const Viewport = () => {
   useEffect(() => {
     if (!stage) return;
 
-    stage.eventMode = 'static';
-
-    stage.on('wheel', handleWheel);
-    stage.on('pointerdown', handleStagePointerDown);
-    stage.on('globalpointermove', handleStageGlobalPointerMove);
-    stage.on('pointerup', handleStagePointerUp);
-    stage.on('pointerupoutside', handleStagePointerUp);
-    stage.on('rightclick', handleStageRightClick);
-    stage.on('click', handleStageClick);
-    stage.on('globalpointermove', handleStageGlobalPointerMoveForConnection);
-
-    return () => {
-      stage.off('wheel', handleWheel);
-      stage.off('pointerdown', handleStagePointerDown);
-      stage.off('globalpointermove', handleStageGlobalPointerMove);
-      stage.off('pointerup', handleStagePointerUp);
-      stage.off('pointerupoutside', handleStagePointerUp);
-      stage.off('rightclick', handleStageRightClick);
-      stage.off('click', handleStageClick);
-      stage.off('globalpointermove', handleStageGlobalPointerMoveForConnection);
-    };
-  }, [
-    stage,
-    handleWheel,
-    handleStagePointerDown,
-    handleStageGlobalPointerMove,
-    handleStagePointerUp,
-    handleStageRightClick,
-    handleStageClick,
-    handleStageGlobalPointerMoveForConnection,
-  ]);
-
-  useEffect(() => {
-    if (!stage) return;
-
     if (stage.x !== viewport.x || stage.y !== viewport.y || stage.scale.x !== viewport.scale) {
       stage.position.set(viewport.x, viewport.y);
       stage.scale.set(viewport.scale);
@@ -675,9 +640,12 @@ export const Viewport = () => {
         <pixiContainer
           eventMode="static"
           onWheel={handleWheel}
-          // onContextMenu={handleContextMenu}
-          // onMouseMove={handleMouseMove}
-          // onDragEnd={handleDragEnd}
+          onPointerDown={handleStagePointerDown}
+          onGlobalPointerMove={handleStageGlobalPointerMove}
+          onPointerUp={handleStagePointerUp}
+          onPointerUpOutside={handleStagePointerUp}
+          onRightClick={handleStageRightClick}
+          onGlobalMouseMove={handleStageGlobalPointerMoveForConnection}
           onClick={handleStageClick}
         >
           <WebLayer

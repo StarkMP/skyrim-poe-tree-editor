@@ -7,7 +7,10 @@ import { Viewport } from '@/components/viewport';
 import { useStore } from '@/store';
 
 export const App = () => {
-  const { undo, canUndo, isS3KeyValid, setS3SecretKey } = useStore();
+  const undo = useStore(({ undo }) => undo);
+  const canUndo = useStore(({ canUndo }) => canUndo);
+  const isS3KeyValid = useStore(({ isS3KeyValid }) => isS3KeyValid);
+  const setS3SecretKey = useStore(({ setS3SecretKey }) => setS3SecretKey);
   const [showS3Modal, setShowS3Modal] = useState(!isS3KeyValid);
 
   useEffect(() => {

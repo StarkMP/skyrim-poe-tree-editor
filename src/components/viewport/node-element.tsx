@@ -147,7 +147,6 @@ export const NodeElement = ({
           y={0}
           width={iconSize}
           height={iconSize}
-          eventMode="none"
         />
       ) : null}
 
@@ -159,7 +158,6 @@ export const NodeElement = ({
           y={0}
           width={borderSize}
           height={borderSize}
-          eventMode="none"
         />
       ) : null}
 
@@ -170,7 +168,6 @@ export const NodeElement = ({
           graphics.circle(0, 0, outlineRadius);
           graphics.stroke();
         }}
-        eventMode="none"
       />
 
       {isSelected ? (
@@ -181,7 +178,6 @@ export const NodeElement = ({
             graphics.circle(0, 0, radius);
             graphics.stroke();
           }}
-          eventMode="none"
         />
       ) : null}
     </pixiContainer>

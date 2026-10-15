@@ -342,6 +342,11 @@ export const Viewport = () => {
     stageReady,
   ]);
 
+  const checkElementSelected = (id: string, type: ElementType) => {
+    if (isMultiSelectMode) return isElementSelected(id);
+    return selectedElement?.id === id && selectedElement?.type === type;
+  };
+
   const handleCreateNode = () => {
     if (contextMenu) {
       let x = contextMenu.canvasX;
@@ -701,13 +706,7 @@ export const Viewport = () => {
               key={id}
               id={id}
               image={image}
-              isSelected={
-                isMultiSelectMode
-                  ? isElementSelected(id)
-                  : selectedElement?.id === id
-                    ? selectedElement?.type === 'image'
-                    : null
-              }
+              isSelected={checkElementSelected(id, 'image')}
               onSelect={(e) => handleImageClick(id, e)}
               onContextMenu={handleImageContextMenu}
               onDragStart={() => {
@@ -735,13 +734,7 @@ export const Viewport = () => {
           {stoneSelection ? (
             <StoneSelectionElement
               stone={stoneSelection}
-              isSelected={
-                isMultiSelectMode
-                  ? isElementSelected(STONE_SELECTION_ID)
-                  : selectedElement?.id === STONE_SELECTION_ID
-                    ? selectedElement?.type === 'stone'
-                    : null
-              }
+              isSelected={checkElementSelected(STONE_SELECTION_ID, 'stone')}
               onSelect={handleStoneClick}
               onContextMenu={handleStoneContextMenu}
               onDragStart={() => {
@@ -850,13 +843,7 @@ export const Viewport = () => {
               key={id}
               id={id}
               node={node}
-              isSelected={
-                isMultiSelectMode
-                  ? isElementSelected(id)
-                  : selectedElement?.id === id
-                    ? selectedElement?.type === 'node'
-                    : null
-              }
+              isSelected={checkElementSelected(id, 'node')}
               onSelect={(e) => handleNodeClick(id, e)}
               onContextMenu={handleNodeContextMenu}
               onDragStart={() => {
@@ -891,13 +878,7 @@ export const Viewport = () => {
               key={id}
               id={id}
               orbit={orbit}
-              isSelected={
-                isMultiSelectMode
-                  ? isElementSelected(id)
-                  : selectedElement?.id === id
-                    ? selectedElement?.type === 'orbit'
-                    : null
-              }
+              isSelected={checkElementSelected(id, 'orbit')}
               onSelect={(e) => handleOrbitClick(id, e)}
               onContextMenu={handleOrbitContextMenu}
               onDragStart={() => {

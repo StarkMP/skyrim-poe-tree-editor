@@ -1,6 +1,5 @@
-import type { KonvaEventObject } from 'konva/lib/Node';
-import { useEffect, useState } from 'react';
-import { Circle, Group, Image } from 'react-konva';
+import { type FederatedMouseEvent, type Graphics, Texture } from 'pixi.js';
+import { useEffect, useMemo, useState } from 'react';
 import useImage from 'use-image';
 
 import extraLargeNodeBorder from '@/assets/extralarge-node-border.png';
@@ -16,6 +15,8 @@ import { snapToRotatedGrid } from '@/utils/grid-helpers';
 import { getNodeRadius } from '@/utils/node-helpers';
 import { findClosestOrbitSnapPoint } from '@/utils/orbit-helpers';
 
+import { type Position, useElementDrag } from './use-element-drag';
+
 const nodeBorderImages: Record<NodeType, string> = {
   [NodeType.ExtraSmallNode]: extraSmallNodeBorder,
   [NodeType.SmallNode]: smallNodeBorder,
@@ -29,11 +30,11 @@ type NodeElementProps = {
   id: string;
   node: EditorNode;
   isSelected: boolean | null;
-  onSelect: (e: KonvaEventObject<MouseEvent>) => void;
+  onSelect: (e: FederatedMouseEvent) => void;
   onContextMenu: (id: string, x: number, y: number) => void;
   onDragStart: () => void;
-  onDragMove: (pos: { x: number; y: number }) => void;
-  onDragEnd: (finalPos: { x: number; y: number }) => void;
+  onDragMove: (pos: Position) => void;
+  onDragEnd: (finalPos: Position) => void;
 };
 
 export const NodeElement = ({
@@ -50,167 +51,139 @@ export const NodeElement = ({
   const gridSettings = useStore((state) => state.gridSettings);
   const orbits = useStore((state) => state.orbits);
   const radius = getNodeRadius(node.type);
-  const [image] = useImage(node.iconUrl || '', 'anonymous');
-  const [borderImage] = useImage(nodeBorderImages[node.type], 'anonymous');
-  const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
+  const [iconImage] = useImage(node.iconUrl || '', 'anonymous');
+  const [iconTexture, setIconTexture] = useState<Texture | null>(null);
+  const [borderImage] = useImage(nodeBorderImages[node.type] || '', 'anonymous');
+
+  const borderTexture = useMemo(
+    () => (borderImage ? Texture.from(borderImage) : null),
+    [borderImage]
+  );
 
   const borderScale = 1.15;
   const borderSize = radius * 2 * borderScale;
   const outlineRadius = radius * borderScale;
+  const iconSize = radius * 2 * NODE_ICON_SIZE_PERCENT;
 
   useEffect(() => {
-    if (!image) {
-      setImageElement(null);
+    if (!iconImage) {
+      setIconTexture(null);
       return;
     }
 
     const canvas = document.createElement('canvas');
-    const size = radius * 2 * NODE_ICON_SIZE_PERCENT;
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = iconSize;
+    canvas.height = iconSize;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const imageRadius = size / 2;
+    const imageRadius = iconSize / 2;
     ctx.beginPath();
     ctx.arc(imageRadius, imageRadius, imageRadius, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
 
-    ctx.drawImage(image, 0, 0, size, size);
+    ctx.drawImage(iconImage, 0, 0, iconSize, iconSize);
 
-    canvas.toBlob((blob) => {
-      if (!blob) return;
+    setIconTexture(Texture.from(canvas));
+  }, [iconImage, radius]);
 
-      const img = new window.Image();
-      const url = URL.createObjectURL(blob);
-      img.src = url;
-      img.onload = () => {
-        setImageElement(img);
-
-        URL.revokeObjectURL(url);
-      };
-    });
-  }, [image, radius]);
-
-  const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
-    const currentPos = { x: e.target.x(), y: e.target.y() };
-
-    const orbitSnapPoint = findClosestOrbitSnapPoint(currentPos, orbits);
-
+  const snap = (pos: Position): Position => {
+    const orbitSnapPoint = findClosestOrbitSnapPoint(pos, orbits);
     if (orbitSnapPoint) {
-      e.target.position(orbitSnapPoint);
-      onDragMove(orbitSnapPoint);
-    } else if (gridSettings.enabled) {
-      const snapped = snapToRotatedGrid(
-        currentPos.x,
-        currentPos.y,
-        gridSettings.size,
-        gridSettings.rotation
-      );
-      e.target.position(snapped);
-      onDragMove(snapped);
-    } else {
-      onDragMove(currentPos);
+      return orbitSnapPoint;
     }
+    if (gridSettings.enabled) {
+      return snapToRotatedGrid(pos.x, pos.y, gridSettings.size, gridSettings.rotation);
+    }
+    return pos;
   };
 
-  const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
-    const currentPos = { x: e.target.x(), y: e.target.y() };
-
-    const orbitSnapPoint = findClosestOrbitSnapPoint(currentPos, orbits);
-
-    let finalX: number;
-    let finalY: number;
-
-    if (orbitSnapPoint) {
-      finalX = orbitSnapPoint.x;
-      finalY = orbitSnapPoint.y;
-    } else if (gridSettings.enabled) {
-      const snapped = snapToRotatedGrid(
-        currentPos.x,
-        currentPos.y,
-        gridSettings.size,
-        gridSettings.rotation
-      );
-      finalX = snapped.x;
-      finalY = snapped.y;
-    } else {
-      finalX = currentPos.x;
-      finalY = currentPos.y;
-    }
-
+  const finalize = (finalPos: Position) => {
     updateNode(id, {
-      x: finalX,
-      y: finalY,
+      x: finalPos.x,
+      y: finalPos.y,
     });
-    onDragEnd({ x: finalX, y: finalY });
   };
 
-  const handleContextMenu = (e: KonvaEventObject<PointerEvent>) => {
-    e.evt.preventDefault();
-    e.cancelBubble = true;
-    onContextMenu(id, e.evt.clientX, e.evt.clientY);
+  const { onPointerDown, onGlobalPointerMove, onPointerUp, onPointerUpOutside } = useElementDrag({
+    isDraggable: isSelected === true,
+    snap,
+    finalize,
+    onDragStart,
+    onDragMove,
+    onDragEnd,
+  });
+
+  const handleContextMenu = (e: FederatedMouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onContextMenu(id, e.global.x, e.global.y);
   };
 
-  const handleClick = (e: KonvaEventObject<MouseEvent>) => {
-    e.cancelBubble = true;
+  const handleClick = (e: FederatedMouseEvent) => {
+    // e.stopPropagation();
     onSelect(e);
   };
 
   return (
-    <Group
+    <pixiContainer
       x={node.x}
       y={node.y}
-      draggable={isSelected === true}
-      onDragStart={onDragStart}
-      onDragMove={handleDragMove}
-      onDragEnd={handleDragEnd}
-      onContextMenu={handleContextMenu}
+      eventMode="static"
+      onPointerDown={onPointerDown}
+      onGlobalPointerMove={onGlobalPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerUpOutside={onPointerUpOutside}
+      onRightClick={handleContextMenu}
       onClick={handleClick}
     >
-      {/* Icon image */}
-      {imageElement ? (
-        <Image
-          image={imageElement}
-          x={-(radius * 2 * NODE_ICON_SIZE_PERCENT) / 2}
-          y={-(radius * 2 * NODE_ICON_SIZE_PERCENT) / 2}
-          width={radius * 2 * NODE_ICON_SIZE_PERCENT}
-          height={radius * 2 * NODE_ICON_SIZE_PERCENT}
+      {iconTexture ? (
+        <pixiSprite
+          texture={iconTexture}
+          anchor={0.5}
+          x={0}
+          y={0}
+          width={iconSize}
+          height={iconSize}
+          eventMode="none"
         />
       ) : null}
 
-      {/* Border image (above the node icon) */}
-      {borderImage ? (
-        <Image
-          image={borderImage}
-          x={-borderSize / 2}
-          y={-borderSize / 2}
+      {borderTexture ? (
+        <pixiSprite
+          texture={borderTexture}
+          anchor={0.5}
+          x={0}
+          y={0}
           width={borderSize}
           height={borderSize}
+          eventMode="none"
         />
       ) : null}
 
-      {/* Outline with viewport background color */}
-      <Circle
-        radius={outlineRadius}
-        stroke={VIEWPORT_BACKGROUND_COLOR}
-        strokeWidth={2}
-        fill="transparent"
-        listening={false}
+      <pixiGraphics
+        draw={(graphics: Graphics) => {
+          graphics.clear();
+          graphics.lineStyle(2, VIEWPORT_BACKGROUND_COLOR, 1);
+          graphics.circle(0, 0, outlineRadius);
+          graphics.stroke();
+        }}
+        eventMode="none"
       />
 
-      {/* Selection highlight */}
       {isSelected ? (
-        <Circle
-          radius={radius}
-          stroke={SELECTION_COLOR}
-          strokeWidth={6}
-          fill="transparent"
-          listening={false}
+        <pixiGraphics
+          draw={(graphics: Graphics) => {
+            graphics.clear();
+            graphics.lineStyle(6, SELECTION_COLOR, 1);
+            graphics.circle(0, 0, radius);
+            graphics.stroke();
+          }}
+          eventMode="none"
         />
       ) : null}
-    </Group>
+    </pixiContainer>
   );
 };

@@ -1,5 +1,4 @@
-import type { KonvaEventObject } from 'konva/lib/Node';
-import { Circle, Group, Line } from 'react-konva';
+import { type FederatedMouseEvent, type Graphics } from 'pixi.js';
 
 import {
   ORBIT_CENTER_FILL,
@@ -15,15 +14,17 @@ import { PositionOrbit } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
 import { getOrbitPoints } from '@/utils/orbit-helpers';
 
+import { type Position, useElementDrag } from './use-element-drag';
+
 type OrbitElementProps = {
   id: string;
   orbit: PositionOrbit;
   isSelected: boolean | null;
-  onSelect: (e: KonvaEventObject<MouseEvent>) => void;
+  onSelect: (e: FederatedMouseEvent) => void;
   onContextMenu: (id: string, x: number, y: number) => void;
   onDragStart: () => void;
-  onDragMove?: (pos: { x: number; y: number }) => void;
-  onDragEnd: (finalPos: { x: number; y: number }) => void;
+  onDragMove?: (pos: Position) => void;
+  onDragEnd: (finalPos: Position) => void;
 };
 
 export const OrbitElement = ({
@@ -40,117 +41,117 @@ export const OrbitElement = ({
   const gridSettings = useStore((state) => state.gridSettings);
 
   const points = getOrbitPoints(orbit);
-  const centerPoint = points[0];
   const orbitPoints = points.slice(1);
 
-  const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
-    const currentPos = { x: e.target.x(), y: e.target.y() };
-
+  const snap = (pos: Position): Position => {
     if (gridSettings.enabled) {
-      const snapped = snapToRotatedGrid(
-        currentPos.x,
-        currentPos.y,
-        gridSettings.size,
-        gridSettings.rotation
-      );
-      e.target.position(snapped);
-      onDragMove?.(snapped);
-    } else {
-      onDragMove?.(currentPos);
+      return snapToRotatedGrid(pos.x, pos.y, gridSettings.size, gridSettings.rotation);
     }
+    return pos;
   };
 
-  const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
-    let finalX: number;
-    let finalY: number;
-
-    if (gridSettings.enabled) {
-      const snapped = snapToRotatedGrid(
-        e.target.x(),
-        e.target.y(),
-        gridSettings.size,
-        gridSettings.rotation
-      );
-      finalX = snapped.x;
-      finalY = snapped.y;
-    } else {
-      finalX = e.target.x();
-      finalY = e.target.y();
-    }
-
+  const finalize = (finalPos: Position) => {
     updateOrbit(id, {
-      x: finalX,
-      y: finalY,
+      x: finalPos.x,
+      y: finalPos.y,
     });
-    onDragEnd({ x: finalX, y: finalY });
   };
 
-  const handleContextMenu = (e: KonvaEventObject<PointerEvent>) => {
-    e.evt.preventDefault();
-    e.cancelBubble = true;
-    onContextMenu(id, e.evt.clientX, e.evt.clientY);
+  const { onPointerDown, onGlobalPointerMove, onPointerUp, onPointerUpOutside } = useElementDrag({
+    isDraggable: isSelected === true,
+    snap,
+    finalize,
+    onDragStart,
+    onDragMove,
+    onDragEnd,
+  });
+
+  const handleContextMenu = (e: FederatedMouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onContextMenu(id, e.global.x, e.global.y);
   };
 
-  const handleClick = (e: KonvaEventObject<MouseEvent>) => {
-    e.cancelBubble = true;
+  const handleClick = (e: FederatedMouseEvent) => {
+    e.stopPropagation();
     onSelect(e);
   };
 
+  const circleStroke = isSelected ? SELECTION_COLOR : ORBIT_CIRCLE_COLOR;
+  const circleWidth = isSelected ? 2 : 1;
+  const centerFill = isSelected ? SELECTION_COLOR : ORBIT_CENTER_FILL;
+  const centerStroke = isSelected ? SELECTION_COLOR : ORBIT_CENTER_STROKE;
+  const pointFill = isSelected ? SELECTION_COLOR : ORBIT_POINT_FILL;
+  const pointStroke = isSelected ? SELECTION_COLOR : ORBIT_POINT_STROKE;
+
   return (
-    <Group
+    <pixiContainer
       x={orbit.x}
       y={orbit.y}
-      draggable={isSelected === true}
-      onDragStart={onDragStart}
-      onDragMove={handleDragMove}
-      onDragEnd={handleDragEnd}
-      onContextMenu={handleContextMenu}
+      eventMode="static"
+      onPointerDown={onPointerDown}
+      onGlobalPointerMove={onGlobalPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerUpOutside={onPointerUpOutside}
+      onRightClick={handleContextMenu}
       onClick={handleClick}
     >
-      {/* Орбита (круг) */}
-      <Circle
-        radius={orbit.radius}
-        stroke={isSelected ? SELECTION_COLOR : ORBIT_CIRCLE_COLOR}
-        strokeWidth={isSelected ? 2 : 1}
-        listening={false}
+      <pixiGraphics
+        draw={(graphics: Graphics) => {
+          graphics.clear();
+          graphics.lineStyle(circleWidth, circleStroke, 1);
+          graphics.circle(0, 0, orbit.radius);
+          graphics.stroke();
+        }}
+        eventMode="none"
       />
 
-      {/* Центральная точка снаппинга */}
-      <Circle
-        x={0}
-        y={0}
-        radius={10}
-        fill={isSelected ? SELECTION_COLOR : ORBIT_CENTER_FILL}
-        stroke={isSelected ? SELECTION_COLOR : ORBIT_CENTER_STROKE}
-        strokeWidth={2}
+      <pixiGraphics
+        draw={(graphics: Graphics) => {
+          graphics.clear();
+          graphics.fillStyle = centerFill;
+          graphics.circle(0, 0, 10);
+          graphics.fill();
+          graphics.lineStyle(2, centerStroke, 1);
+          graphics.circle(0, 0, 10);
+          graphics.stroke();
+        }}
+        eventMode="none"
       />
 
-      {/* Точки снаппинга на орбите */}
-      {orbitPoints.map((point, index) => (
-        <Circle
-          key={index}
-          x={point.x - orbit.x}
-          y={point.y - orbit.y}
-          radius={4}
-          fill={isSelected ? SELECTION_COLOR : ORBIT_POINT_FILL}
-          stroke={isSelected ? SELECTION_COLOR : ORBIT_POINT_STROKE}
-          strokeWidth={1}
-          listening={false}
+      {orbitPoints.length > 0 ? (
+        <pixiGraphics
+          draw={(graphics: Graphics) => {
+            graphics.clear();
+            graphics.fillStyle = pointFill;
+            graphics.lineStyle(1, pointStroke, 1);
+            for (const point of orbitPoints) {
+              const px = point.x - orbit.x;
+              const py = point.y - orbit.y;
+              graphics.circle(px, py, 4);
+              graphics.fill();
+              graphics.circle(px, py, 4);
+              graphics.stroke();
+            }
+          }}
+          eventMode="none"
         />
-      ))}
+      ) : null}
 
-      {/* Линии от центра к точкам (опционально, для наглядности) */}
-      {isSelected
-        ? orbitPoints.map((point, index) => (
-            <Line
-              key={`line-${index}`}
-              points={[0, 0, point.x - orbit.x, point.y - orbit.y]}
-              stroke={ORBIT_LINE_COLOR}
-              strokeWidth={1}
-              listening={false}
-            />
-          ))
-        : null}
-    </Group>
+      {isSelected ? (
+        <pixiGraphics
+          draw={(graphics: Graphics) => {
+            graphics.clear();
+            graphics.lineStyle(1, ORBIT_LINE_COLOR, 1);
+            for (const point of orbitPoints) {
+              graphics.moveTo(0, 0);
+              graphics.lineTo(point.x - orbit.x, point.y - orbit.y);
+              graphics.stroke();
+            }
+          }}
+          eventMode="none"
+        />
+      ) : null}
+    </pixiContainer>
   );
 };

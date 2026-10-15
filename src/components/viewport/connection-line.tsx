@@ -1,5 +1,5 @@
+import type { Graphics } from 'pixi.js';
 import { useState } from 'react';
-import { Group, Line } from 'react-konva';
 
 import {
   CONNECTION_BORDER_DEFAULT,
@@ -80,36 +80,44 @@ export const ConnectionLine = ({
     return CONNECTION_BORDER_DEFAULT;
   };
 
+  const drawPolyline = (graphics: Graphics, points: number[]) => {
+    if (points.length < 2) return;
+    graphics.moveTo(points[0], points[1]);
+    for (let i = 2; i < points.length; i += 2) {
+      graphics.lineTo(points[i], points[i + 1]);
+    }
+  };
+
+  const lineColor = getLineColor();
+  const borderColor = getBorderColor();
+  const borderWidth = isSelected === true ? 7 : 5;
+  const lineWidth = isSelected === true ? 5 : 3;
+
   return (
-    <Group opacity={opacity}>
-      {/* Invisible wider line for easier hover and click */}
-      <Line
-        points={curvePoints}
-        stroke="transparent"
-        strokeWidth={20}
-        tension={0}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={onSelect}
-      />
+    <pixiGraphics
+      draw={(graphics: Graphics) => {
+        graphics.clear();
 
-      {/* Visible connection line border */}
-      <Line
-        points={curvePoints}
-        stroke={getBorderColor()}
-        strokeWidth={isSelected === true ? 7 : 5}
-        tension={0}
-        listening={false}
-      />
+        // Invisible wider line for easier hover and click
+        graphics.lineStyle(20, 'transparent', 1);
+        drawPolyline(graphics, curvePoints);
+        graphics.stroke();
 
-      {/* Visible connection line */}
-      <Line
-        points={curvePoints}
-        stroke={getLineColor()}
-        strokeWidth={isSelected === true ? 5 : 3}
-        tension={0}
-        listening={false}
-      />
-    </Group>
+        // Visible connection line border
+        graphics.lineStyle(borderWidth, borderColor, 1);
+        drawPolyline(graphics, curvePoints);
+        graphics.stroke();
+
+        // Visible connection line
+        graphics.lineStyle(lineWidth, lineColor, 1);
+        drawPolyline(graphics, curvePoints);
+        graphics.stroke();
+      }}
+      alpha={opacity}
+      eventMode="static"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={onSelect}
+    />
   );
 };

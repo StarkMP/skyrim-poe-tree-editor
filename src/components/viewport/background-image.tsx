@@ -78,9 +78,10 @@ export const BackgroundImage = ({
 
   return (
     <pixiContainer
+      eventMode="static"
       x={image.x}
       y={image.y}
-      eventMode="static"
+      rotation={rotationRad}
       onPointerDown={onPointerDown}
       onGlobalPointerMove={onGlobalPointerMove}
       onPointerUp={onPointerUp}
@@ -88,32 +89,28 @@ export const BackgroundImage = ({
       onRightClick={handleContextMenu}
       onClick={handleClick}
     >
-      <pixiContainer rotation={rotationRad}>
-        {shouldDrawBorder ? (
-          <pixiGraphics
-            draw={(graphics: Graphics) => {
-              graphics.clear();
-              graphics.lineStyle(strokeWidth, stroke, 1);
-              graphics.rect(0, 0, image.width, image.height);
-              graphics.stroke();
-            }}
-            alpha={opacity}
-            eventMode="none"
-          />
-        ) : null}
+      {shouldDrawBorder ? (
+        <pixiGraphics
+          draw={(graphics: Graphics) => {
+            graphics.clear();
+            graphics.lineStyle(strokeWidth, stroke, 1);
+            graphics.rect(0, 0, image.width, image.height);
+            graphics.stroke();
+          }}
+          alpha={opacity}
+        />
+      ) : null}
 
-        {texture ? (
-          <pixiSprite
-            texture={texture}
-            width={image.width}
-            height={image.height}
-            x={0}
-            y={0}
-            alpha={opacity}
-            eventMode="none"
-          />
-        ) : null}
-      </pixiContainer>
+      {texture ? (
+        <pixiSprite
+          texture={texture}
+          width={image.width}
+          height={image.height}
+          x={0}
+          y={0}
+          alpha={opacity}
+        />
+      ) : null}
     </pixiContainer>
   );
 };

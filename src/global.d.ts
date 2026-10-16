@@ -1,10 +1,16 @@
+/* eslint-disable unicorn/require-module-specifiers */
 /* eslint-disable @typescript-eslint/consistent-type-definitions */
-import { SKSE_API_Call } from './types';
+import { type PixiReactElementProps } from '@pixi/react';
+import { type Viewport } from 'pixi-viewport';
 
-declare global {
-  interface Window {
-    SKSE_API: {
-      call: SKSE_API_Call;
-    };
+declare module '@pixi/react' {
+  interface PixiElements {
+    // Регистрируем версию с префиксом: <pixiViewport />
+    pixiViewport: PixiReactElementProps<typeof Viewport>;
+
+    // Если в будущем захотите использовать без префикса: <viewport />
+    viewport: PixiReactElementProps<typeof Viewport>;
   }
 }
+
+export {};

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ElementsPanel } from '@/components/elements-panel';
 import { S3CredentialsModal } from '@/components/s3-credentials-modal';
 import { SettingsPanel } from '@/components/settings-panel';
-import { Viewport } from '@/components/viewport';
+import { Stage } from '@/components/viewport';
 import { useStore } from '@/store';
 
 export const App = () => {
@@ -42,7 +42,7 @@ export const App = () => {
     <>
       <div className="w-screen h-screen overflow-hidden grid grid-cols-[300px_1fr_300px]">
         <ElementsPanel />
-        <Viewport />
+        <Stage />
         <SettingsPanel />
       </div>
 

@@ -91,19 +91,11 @@ export const StoneSelectionElement = ({
             graphics.rect(0, 0, stone.width, stone.height);
             graphics.stroke();
           }}
-          eventMode="none"
         />
       ) : null}
 
       {texture ? (
-        <pixiSprite
-          texture={texture}
-          width={stone.width}
-          height={stone.height}
-          x={0}
-          y={0}
-          eventMode="none"
-        />
+        <pixiSprite texture={texture} width={stone.width} height={stone.height} x={0} y={0} />
       ) : null}
     </pixiContainer>
   );

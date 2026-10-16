@@ -74,6 +74,7 @@
     "lucide-react": "^0.546.0",
     "motion": "12.23.24",
     "nanoid": "^5.1.6",
+    "pixi-viewport": "^6.0.3",
     "pixi.js": "^8.22.0",
     "rc-virtual-list": "^3.19.2",
     "react": "19.2.0",

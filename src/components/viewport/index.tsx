@@ -6,7 +6,8 @@ import {
   type FederatedWheelEvent,
   Point,
 } from 'pixi.js';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Viewport } from 'pixi-viewport';
+import { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   MAX_ZOOM,
@@ -28,11 +29,19 @@ import { OrbitElement } from './orbit-element';
 import { StoneSelectionElement } from './stone-selection-element';
 import { TempConnectionLine } from './temp-connection-line';
 import type { Position } from './use-element-drag';
+import { AppViewport } from './viewport';
 import { WebLayer } from './web-layer';
 
-extend({ Container, Graphics, Sprite });
+extend({ Viewport, Container, Graphics, Sprite });
 
-export const Viewport = () => {
+const preventDefaultWheelRefCallback: RefCallback<HTMLDivElement> = (element) => {
+  if (!element) return;
+  const prevent = (e: WheelEvent) => e.preventDefault();
+  element.addEventListener('wheel', prevent);
+  return () => element.removeEventListener('wheel', prevent);
+};
+
+export const Stage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<ApplicationRef>(null);
   const [stageReady, setStageReady] = useState(false);
@@ -206,22 +215,24 @@ export const Viewport = () => {
     [updateViewport, clampViewportPosition]
   );
 
-  const handleStageRightClick = useCallback((e: FederatedMouseEvent) => {
-    if (!stage || e.target !== stage) return;
-    e.preventDefault();
+  const handleStageRightClick = useCallback(
+    (e: FederatedMouseEvent) => {
+      if (!stage) return;
 
-    const canvasPos = {
-      x: (e.global.x - stage.x) / stage.scale.x,
-      y: (e.global.y - stage.y) / stage.scale.y,
-    };
+      const canvasPos = {
+        x: (e.global.x - stage.x) / stage.scale.x,
+        y: (e.global.y - stage.y) / stage.scale.y,
+      };
 
-    setContextMenu({
-      x: e.global.x,
-      y: e.global.y,
-      canvasX: canvasPos.x,
-      canvasY: canvasPos.y,
-    });
-  }, []);
+      setContextMenu({
+        x: e.global.x,
+        y: e.global.y,
+        canvasX: canvasPos.x,
+        canvasY: canvasPos.y,
+      });
+    },
+    [stage]
+  );
 
   const handleStageClick = useCallback(
     (e: FederatedPointerEvent) => {
@@ -252,60 +263,60 @@ export const Viewport = () => {
     [isCreatingConnection]
   );
 
-  useEffect(() => {
-    if (!stage) return;
+  // useEffect(() => {
+  //   if (!stage) return;
 
-    if (stage.x !== viewport.x || stage.y !== viewport.y || stage.scale.x !== viewport.scale) {
-      stage.position.set(viewport.x, viewport.y);
-      stage.scale.set(viewport.scale);
-    }
-  }, [viewport, stage]);
+  //   if (stage.x !== viewport.x || stage.y !== viewport.y || stage.scale.x !== viewport.scale) {
+  //     stage.position.set(viewport.x, viewport.y);
+  //     stage.scale.set(viewport.scale);
+  //   }
+  // }, [viewport, stage]);
 
-  useEffect(() => {
-    if (!viewportCenterRequest || !stage) return;
+  // useEffect(() => {
+  //   if (!viewportCenterRequest || !stage) return;
 
-    const { id, type } = viewportCenterRequest;
+  //   const { id, type } = viewportCenterRequest;
 
-    let elementX = 0;
-    let elementY = 0;
+  //   let elementX = 0;
+  //   let elementY = 0;
 
-    if (type === 'node' && nodes[id]) {
-      elementX = nodes[id].x;
-      elementY = nodes[id].y;
-    } else if (type === 'image' && images[id]) {
-      elementX = images[id].x + images[id].width / 2;
-      elementY = images[id].y + images[id].height / 2;
-    } else if (type === 'orbit' && orbits[id]) {
-      elementX = orbits[id].x;
-      elementY = orbits[id].y;
-    } else if (type === 'stone' && stoneSelection) {
-      elementX = stoneSelection.x + stoneSelection.width / 2;
-      elementY = stoneSelection.y + stoneSelection.height / 2;
-    } else {
-      return;
-    }
+  //   if (type === 'node' && nodes[id]) {
+  //     elementX = nodes[id].x;
+  //     elementY = nodes[id].y;
+  //   } else if (type === 'image' && images[id]) {
+  //     elementX = images[id].x + images[id].width / 2;
+  //     elementY = images[id].y + images[id].height / 2;
+  //   } else if (type === 'orbit' && orbits[id]) {
+  //     elementX = orbits[id].x;
+  //     elementY = orbits[id].y;
+  //   } else if (type === 'stone' && stoneSelection) {
+  //     elementX = stoneSelection.x + stoneSelection.width / 2;
+  //     elementY = stoneSelection.y + stoneSelection.height / 2;
+  //   } else {
+  //     return;
+  //   }
 
-    const scale = stage.scale.x;
-    const container = containerRef.current;
-    if (!container) return;
-    const width = container.offsetWidth;
-    const height = container.offsetHeight;
+  //   const scale = stage.scale.x;
+  //   const container = containerRef.current;
+  //   if (!container) return;
+  //   const width = container.offsetWidth;
+  //   const height = container.offsetHeight;
 
-    const newX = width / 2 - elementX * scale;
-    const newY = height / 2 - elementY * scale;
+  //   const newX = width / 2 - elementX * scale;
+  //   const newY = height / 2 - elementY * scale;
 
-    stage.position.set(newX, newY);
+  //   stage.position.set(newX, newY);
 
-    clearCenterRequest();
-  }, [
-    viewportCenterRequest?.timestamp,
-    nodes,
-    images,
-    orbits,
-    stoneSelection,
-    clearCenterRequest,
-    stageReady,
-  ]);
+  //   clearCenterRequest();
+  // }, [
+  //   viewportCenterRequest?.timestamp,
+  //   nodes,
+  //   images,
+  //   orbits,
+  //   stoneSelection,
+  //   clearCenterRequest,
+  //   stageReady,
+  // ]);
 
   const checkElementSelected = (id: string, type: ElementType) => {
     if (isMultiSelectMode) return isElementSelected(id);
@@ -624,279 +635,270 @@ export const Viewport = () => {
   const isMultiSelectMode = selectedElements.size > 0;
 
   return (
-    <div ref={containerRef} className="size-full">
-      <Application
-        ref={appRef}
-        resizeTo={containerRef}
-        backgroundColor={VIEWPORT_BACKGROUND_COLOR}
-        antialias
-        eventMode="static"
-        autoStart
-        onInit={(app) => {
-          (window as any).__PIXI_APP__ = app;
-          setStageReady(true);
-        }}
-      >
-        <pixiContainer
-          eventMode="static"
-          onWheel={handleWheel}
-          onPointerDown={handleStagePointerDown}
-          onGlobalPointerMove={handleStageGlobalPointerMove}
-          onPointerUp={handleStagePointerUp}
-          onPointerUpOutside={handleStagePointerUp}
-          onRightClick={handleStageRightClick}
-          onGlobalMouseMove={handleStageGlobalPointerMoveForConnection}
-          onClick={handleStageClick}
+    <div ref={preventDefaultWheelRefCallback} className="size-full">
+      <div ref={containerRef} className="size-full">
+        <Application
+          ref={appRef}
+          resizeTo={containerRef}
+          backgroundColor={VIEWPORT_BACKGROUND_COLOR}
+          antialias
+          autoStart
+          onInit={(app) => {
+            (window as any).__PIXI_APP__ = app;
+            setStageReady(true);
+          }}
         >
-          <WebLayer
-            enabled={webSettings.enabled}
-            size={webSettings.size}
-            spokes={webSettings.spokes}
-            rotation={webSettings.rotation}
-            innerRadius={webSettings.innerRadius}
-            concentricCircles={webSettings.concentricCircles}
-          />
-
-          <GridLayer
-            gridSize={gridSettings.size}
-            enabled={gridSettings.enabled}
-            rotation={gridSettings.rotation}
-            stagePos={{ x: stage?.x ?? 0, y: stage?.y ?? 0 }}
-            stageSize={{
-              width: containerRef.current?.offsetWidth ?? 0,
-              height: containerRef.current?.offsetHeight ?? 0,
-            }}
-            scale={stage?.scale.x ?? 1}
-          />
-
-          {Object.entries(images).map(([id, image]) => (
-            <BackgroundImage
-              key={id}
-              id={id}
-              image={image}
-              isSelected={checkElementSelected(id, 'image')}
-              onSelect={(e) => handleImageClick(id, e)}
-              onContextMenu={handleImageContextMenu}
-              onDragStart={() => {
-                if (isMultiSelectMode && isElementSelected(id)) {
-                  handleMultiDragStart(id);
-                } else {
-                  setIsDraggingElement(true);
-                }
-              }}
-              onDragMove={(pos) => {
-                if (isMultiSelectMode && multiDragLeaderId === id) {
-                  handleMultiDragMove(id, pos);
-                }
-              }}
-              onDragEnd={(finalPos) => {
-                if (isMultiSelectMode && multiDragLeaderId === id) {
-                  handleMultiDragEnd(id, finalPos);
-                } else {
-                  setIsDraggingElement(false);
-                }
-              }}
+          <AppViewport onRightClick={handleStageRightClick}>
+            <WebLayer
+              enabled={webSettings.enabled}
+              size={webSettings.size}
+              spokes={webSettings.spokes}
+              rotation={webSettings.rotation}
+              innerRadius={webSettings.innerRadius}
+              concentricCircles={webSettings.concentricCircles}
             />
-          ))}
 
-          {stoneSelection ? (
-            <StoneSelectionElement
-              stone={stoneSelection}
-              isSelected={checkElementSelected(STONE_SELECTION_ID, 'stone')}
-              onSelect={handleStoneClick}
-              onContextMenu={handleStoneContextMenu}
-              onDragStart={() => {
-                if (isMultiSelectMode && isElementSelected(STONE_SELECTION_ID)) {
-                  handleMultiDragStart(STONE_SELECTION_ID);
-                } else {
-                  setIsDraggingElement(true);
-                }
+            <GridLayer
+              gridSize={gridSettings.size}
+              enabled={gridSettings.enabled}
+              rotation={gridSettings.rotation}
+              stagePos={{ x: stage?.x ?? 0, y: stage?.y ?? 0 }}
+              stageSize={{
+                width: containerRef.current?.offsetWidth ?? 0,
+                height: containerRef.current?.offsetHeight ?? 0,
               }}
-              onDragMove={(pos) => {
-                if (isMultiSelectMode && multiDragLeaderId === STONE_SELECTION_ID) {
-                  handleMultiDragMove(STONE_SELECTION_ID, pos);
-                }
-              }}
-              onDragEnd={(finalPos) => {
-                if (isMultiSelectMode && multiDragLeaderId === STONE_SELECTION_ID) {
-                  handleMultiDragEnd(STONE_SELECTION_ID, finalPos);
-                } else {
-                  setIsDraggingElement(false);
-                }
-              }}
+              scale={stage?.scale.x ?? 1}
             />
-          ) : null}
 
-          {Object.entries(connections).map(([connectionId, connection]) => {
-            const fromNode = nodes[connection.fromId];
-            const toNode = nodes[connection.toId];
-            if (!fromNode || !toNode) return null;
-
-            const isHidden =
-              (draggingNodeId &&
-                (connection.fromId === draggingNodeId || connection.toId === draggingNodeId)) ||
-              (multiDraggingNodeIds.size > 0 &&
-                (multiDraggingNodeIds.has(connection.fromId) ||
-                  multiDraggingNodeIds.has(connection.toId)));
-
-            return (
-              <ConnectionLine
-                key={connectionId}
-                from={fromNode}
-                to={toNode}
-                curvature={connection.curvature}
-                isSelected={
-                  selectedElement?.id === connectionId
-                    ? selectedElement?.type === 'connection'
-                    : null
-                }
-                onSelect={() => handleConnectionClick(connectionId)}
-                opacity={isHidden ? 0 : 1}
+            {Object.entries(images).map(([id, image]) => (
+              <BackgroundImage
+                key={id}
+                id={id}
+                image={image}
+                isSelected={checkElementSelected(id, 'image')}
+                onSelect={(e) => handleImageClick(id, e)}
+                onContextMenu={handleImageContextMenu}
+                onDragStart={() => {
+                  if (isMultiSelectMode && isElementSelected(id)) {
+                    handleMultiDragStart(id);
+                  } else {
+                    setIsDraggingElement(true);
+                  }
+                }}
+                onDragMove={(pos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragMove(id, pos);
+                  }
+                }}
+                onDragEnd={(finalPos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragEnd(id, finalPos);
+                  } else {
+                    setIsDraggingElement(false);
+                  }
+                }}
               />
-            );
-          })}
+            ))}
 
-          {draggingNodeId && draggingNodePos
-            ? Object.entries(connections)
-                .filter(
-                  ([, conn]) => conn.fromId === draggingNodeId || conn.toId === draggingNodeId
-                )
-                .map(([connId, connection]) => {
-                  const connectedId =
-                    connection.fromId === draggingNodeId ? connection.toId : connection.fromId;
-                  const connectedNode = nodes[connectedId];
-                  if (!connectedNode) return null;
+            {stoneSelection ? (
+              <StoneSelectionElement
+                stone={stoneSelection}
+                isSelected={checkElementSelected(STONE_SELECTION_ID, 'stone')}
+                onSelect={handleStoneClick}
+                onContextMenu={handleStoneContextMenu}
+                onDragStart={() => {
+                  if (isMultiSelectMode && isElementSelected(STONE_SELECTION_ID)) {
+                    handleMultiDragStart(STONE_SELECTION_ID);
+                  } else {
+                    setIsDraggingElement(true);
+                  }
+                }}
+                onDragMove={(pos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === STONE_SELECTION_ID) {
+                    handleMultiDragMove(STONE_SELECTION_ID, pos);
+                  }
+                }}
+                onDragEnd={(finalPos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === STONE_SELECTION_ID) {
+                    handleMultiDragEnd(STONE_SELECTION_ID, finalPos);
+                  } else {
+                    setIsDraggingElement(false);
+                  }
+                }}
+              />
+            ) : null}
 
-                  const shouldInvertCurvature =
-                    connection.fromId === connectedId && connection.toId === draggingNodeId;
+            {Object.entries(connections).map(([connectionId, connection]) => {
+              const fromNode = nodes[connection.fromId];
+              const toNode = nodes[connection.toId];
+              if (!fromNode || !toNode) return null;
 
-                  const curvature = connection.curvature ?? 0;
-                  const adjustedCurvature = shouldInvertCurvature ? -curvature : curvature;
+              const isHidden =
+                (draggingNodeId &&
+                  (connection.fromId === draggingNodeId || connection.toId === draggingNodeId)) ||
+                (multiDraggingNodeIds.size > 0 &&
+                  (multiDraggingNodeIds.has(connection.fromId) ||
+                    multiDraggingNodeIds.has(connection.toId)));
 
-                  return (
-                    <TempConnectionLine
-                      key={`temp-${connId}`}
-                      from={draggingNodePos}
-                      to={{ x: connectedNode.x, y: connectedNode.y }}
-                      curvature={adjustedCurvature}
-                    />
-                  );
-                })
-            : null}
+              return (
+                <ConnectionLine
+                  key={connectionId}
+                  from={fromNode}
+                  to={toNode}
+                  curvature={connection.curvature}
+                  isSelected={
+                    selectedElement?.id === connectionId
+                      ? selectedElement?.type === 'connection'
+                      : null
+                  }
+                  onSelect={() => handleConnectionClick(connectionId)}
+                  opacity={isHidden ? 0 : 1}
+                />
+              );
+            })}
 
-          {multiDraggingNodeIds.size > 0
-            ? Object.entries(connections)
-                .filter(
-                  ([, conn]) =>
-                    multiDraggingNodeIds.has(conn.fromId) || multiDraggingNodeIds.has(conn.toId)
-                )
-                .map(([connId, connection]) => {
-                  const fromNode = nodes[connection.fromId];
-                  const toNode = nodes[connection.toId];
-                  if (!fromNode || !toNode) return null;
+            {draggingNodeId && draggingNodePos
+              ? Object.entries(connections)
+                  .filter(
+                    ([, conn]) => conn.fromId === draggingNodeId || conn.toId === draggingNodeId
+                  )
+                  .map(([connId, connection]) => {
+                    const connectedId =
+                      connection.fromId === draggingNodeId ? connection.toId : connection.fromId;
+                    const connectedNode = nodes[connectedId];
+                    if (!connectedNode) return null;
 
-                  return (
-                    <TempConnectionLine
-                      key={`temp-multi-${connId}`}
-                      from={{ x: fromNode.x, y: fromNode.y }}
-                      to={{ x: toNode.x, y: toNode.y }}
-                      curvature={connection.curvature ?? 0}
-                    />
-                  );
-                })
-            : null}
+                    const shouldInvertCurvature =
+                      connection.fromId === connectedId && connection.toId === draggingNodeId;
 
-          {Object.entries(nodes).map(([id, node]) => (
-            <NodeElement
-              key={id}
-              id={id}
-              node={node}
-              isSelected={checkElementSelected(id, 'node')}
-              onSelect={(e) => handleNodeClick(id, e)}
-              onContextMenu={handleNodeContextMenu}
-              onDragStart={() => {
-                if (isMultiSelectMode && isElementSelected(id)) {
-                  handleMultiDragStart(id);
-                } else {
-                  setIsDraggingElement(true);
-                  setDraggingNodeId(id);
-                  setDraggingNodePos({ x: node.x, y: node.y });
-                }
-              }}
-              onDragMove={(pos) => {
-                if (isMultiSelectMode && multiDragLeaderId === id) {
-                  handleMultiDragMove(id, pos);
-                }
-                setDraggingNodePos(pos);
-              }}
-              onDragEnd={(finalPos) => {
-                if (isMultiSelectMode && multiDragLeaderId === id) {
-                  handleMultiDragEnd(id, finalPos);
-                } else {
-                  setIsDraggingElement(false);
-                  setDraggingNodeId(null);
-                  setDraggingNodePos(null);
-                }
-              }}
-            />
-          ))}
+                    const curvature = connection.curvature ?? 0;
+                    const adjustedCurvature = shouldInvertCurvature ? -curvature : curvature;
 
-          {Object.entries(orbits).map(([id, orbit]) => (
-            <OrbitElement
-              key={id}
-              id={id}
-              orbit={orbit}
-              isSelected={checkElementSelected(id, 'orbit')}
-              onSelect={(e) => handleOrbitClick(id, e)}
-              onContextMenu={handleOrbitContextMenu}
-              onDragStart={() => {
-                if (isMultiSelectMode && isElementSelected(id)) {
-                  handleMultiDragStart(id);
-                } else {
-                  setIsDraggingElement(true);
-                }
-              }}
-              onDragMove={(pos) => {
-                if (isMultiSelectMode && multiDragLeaderId === id) {
-                  handleMultiDragMove(id, pos);
-                }
-              }}
-              onDragEnd={(finalPos) => {
-                if (isMultiSelectMode && multiDragLeaderId === id) {
-                  handleMultiDragEnd(id, finalPos);
-                } else {
-                  setIsDraggingElement(false);
-                }
-              }}
-            />
-          ))}
+                    return (
+                      <TempConnectionLine
+                        key={`temp-${connId}`}
+                        from={draggingNodePos}
+                        to={{ x: connectedNode.x, y: connectedNode.y }}
+                        curvature={adjustedCurvature}
+                      />
+                    );
+                  })
+              : null}
 
-          {isCreatingConnection && connectionStart ? (
-            <TempConnectionLine from={connectionStart} to={mousePos} />
-          ) : null}
-        </pixiContainer>
-      </Application>
+            {multiDraggingNodeIds.size > 0
+              ? Object.entries(connections)
+                  .filter(
+                    ([, conn]) =>
+                      multiDraggingNodeIds.has(conn.fromId) || multiDraggingNodeIds.has(conn.toId)
+                  )
+                  .map(([connId, connection]) => {
+                    const fromNode = nodes[connection.fromId];
+                    const toNode = nodes[connection.toId];
+                    if (!fromNode || !toNode) return null;
 
-      {contextMenu ? (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          targetId={contextMenu.targetId}
-          targetType={contextMenu.targetType}
-          hasStoneSelection={!!stoneSelection}
-          onCreateNode={handleCreateNode}
-          onCreateImage={handleCreateImage}
-          onCreateOrbit={handleCreateOrbit}
-          onCreateStoneSelection={handleCreateStoneSelection}
-          onStartConnection={handleStartConnection}
-          onRemoveAllConnections={handleRemoveAllConnections}
-          onDeleteNode={handleDeleteNode}
-          onDeleteImage={handleDeleteImage}
-          onDeleteOrbit={handleDeleteOrbit}
-          onDeleteStoneSelection={handleDeleteStoneSelection}
-          onClose={() => setContextMenu(null)}
-        />
-      ) : null}
+                    return (
+                      <TempConnectionLine
+                        key={`temp-multi-${connId}`}
+                        from={{ x: fromNode.x, y: fromNode.y }}
+                        to={{ x: toNode.x, y: toNode.y }}
+                        curvature={connection.curvature ?? 0}
+                      />
+                    );
+                  })
+              : null}
+
+            {Object.entries(nodes).map(([id, node]) => (
+              <NodeElement
+                key={id}
+                id={id}
+                node={node}
+                isSelected={checkElementSelected(id, 'node')}
+                onSelect={(e) => handleNodeClick(id, e)}
+                onContextMenu={handleNodeContextMenu}
+                onDragStart={() => {
+                  if (isMultiSelectMode && isElementSelected(id)) {
+                    handleMultiDragStart(id);
+                  } else {
+                    setIsDraggingElement(true);
+                    setDraggingNodeId(id);
+                    setDraggingNodePos({ x: node.x, y: node.y });
+                  }
+                }}
+                onDragMove={(pos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragMove(id, pos);
+                  }
+                  setDraggingNodePos(pos);
+                }}
+                onDragEnd={(finalPos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragEnd(id, finalPos);
+                  } else {
+                    setIsDraggingElement(false);
+                    setDraggingNodeId(null);
+                    setDraggingNodePos(null);
+                  }
+                }}
+              />
+            ))}
+
+            {Object.entries(orbits).map(([id, orbit]) => (
+              <OrbitElement
+                key={id}
+                id={id}
+                orbit={orbit}
+                isSelected={checkElementSelected(id, 'orbit')}
+                onSelect={(e) => handleOrbitClick(id, e)}
+                onContextMenu={handleOrbitContextMenu}
+                onDragStart={() => {
+                  if (isMultiSelectMode && isElementSelected(id)) {
+                    handleMultiDragStart(id);
+                  } else {
+                    setIsDraggingElement(true);
+                  }
+                }}
+                onDragMove={(pos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragMove(id, pos);
+                  }
+                }}
+                onDragEnd={(finalPos) => {
+                  if (isMultiSelectMode && multiDragLeaderId === id) {
+                    handleMultiDragEnd(id, finalPos);
+                  } else {
+                    setIsDraggingElement(false);
+                  }
+                }}
+              />
+            ))}
+
+            {isCreatingConnection && connectionStart ? (
+              <TempConnectionLine from={connectionStart} to={mousePos} />
+            ) : null}
+          </AppViewport>
+        </Application>
+
+        {contextMenu ? (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            targetId={contextMenu.targetId}
+            targetType={contextMenu.targetType}
+            hasStoneSelection={!!stoneSelection}
+            onCreateNode={handleCreateNode}
+            onCreateImage={handleCreateImage}
+            onCreateOrbit={handleCreateOrbit}
+            onCreateStoneSelection={handleCreateStoneSelection}
+            onStartConnection={handleStartConnection}
+            onRemoveAllConnections={handleRemoveAllConnections}
+            onDeleteNode={handleDeleteNode}
+            onDeleteImage={handleDeleteImage}
+            onDeleteOrbit={handleDeleteOrbit}
+            onDeleteStoneSelection={handleDeleteStoneSelection}
+            onClose={() => setContextMenu(null)}
+          />
+        ) : null}
+      </div>
     </div>
   );
 };

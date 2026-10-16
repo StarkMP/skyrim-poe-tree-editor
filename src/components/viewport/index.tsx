@@ -236,8 +236,6 @@ export const Stage = () => {
 
   const handleStageClick = useCallback(
     (e: FederatedPointerEvent) => {
-      if (!stage || e.target !== stage) return;
-
       selectElement(null, null);
 
       if (isCreatingConnection) {
@@ -262,15 +260,6 @@ export const Stage = () => {
     },
     [isCreatingConnection]
   );
-
-  // useEffect(() => {
-  //   if (!stage) return;
-
-  //   if (stage.x !== viewport.x || stage.y !== viewport.y || stage.scale.x !== viewport.scale) {
-  //     stage.position.set(viewport.x, viewport.y);
-  //     stage.scale.set(viewport.scale);
-  //   }
-  // }, [viewport, stage]);
 
   // useEffect(() => {
   //   if (!viewportCenterRequest || !stage) return;
@@ -648,7 +637,7 @@ export const Stage = () => {
             setStageReady(true);
           }}
         >
-          <AppViewport onRightClick={handleStageRightClick}>
+          <AppViewport onClick={handleStageClick} onRightClick={handleStageRightClick}>
             <WebLayer
               enabled={webSettings.enabled}
               size={webSettings.size}
@@ -728,34 +717,36 @@ export const Stage = () => {
               />
             ) : null}
 
-            {Object.entries(connections).map(([connectionId, connection]) => {
-              const fromNode = nodes[connection.fromId];
-              const toNode = nodes[connection.toId];
-              if (!fromNode || !toNode) return null;
+            <pixiContainer>
+              {Object.entries(connections).map(([connectionId, connection]) => {
+                const fromNode = nodes[connection.fromId];
+                const toNode = nodes[connection.toId];
+                if (!fromNode || !toNode) return null;
 
-              const isHidden =
-                (draggingNodeId &&
-                  (connection.fromId === draggingNodeId || connection.toId === draggingNodeId)) ||
-                (multiDraggingNodeIds.size > 0 &&
-                  (multiDraggingNodeIds.has(connection.fromId) ||
-                    multiDraggingNodeIds.has(connection.toId)));
+                const isHidden =
+                  (draggingNodeId &&
+                    (connection.fromId === draggingNodeId || connection.toId === draggingNodeId)) ||
+                  (multiDraggingNodeIds.size > 0 &&
+                    (multiDraggingNodeIds.has(connection.fromId) ||
+                      multiDraggingNodeIds.has(connection.toId)));
 
-              return (
-                <ConnectionLine
-                  key={connectionId}
-                  from={fromNode}
-                  to={toNode}
-                  curvature={connection.curvature}
-                  isSelected={
-                    selectedElement?.id === connectionId
-                      ? selectedElement?.type === 'connection'
-                      : null
-                  }
-                  onSelect={() => handleConnectionClick(connectionId)}
-                  opacity={isHidden ? 0 : 1}
-                />
-              );
-            })}
+                return (
+                  <ConnectionLine
+                    key={connectionId}
+                    from={fromNode}
+                    to={toNode}
+                    curvature={connection.curvature}
+                    isSelected={
+                      selectedElement?.id === connectionId
+                        ? selectedElement?.type === 'connection'
+                        : null
+                    }
+                    onSelect={() => handleConnectionClick(connectionId)}
+                    opacity={isHidden ? 0 : 1}
+                  />
+                );
+              })}
+            </pixiContainer>
 
             {draggingNodeId && draggingNodePos
               ? Object.entries(connections)
@@ -807,70 +798,74 @@ export const Stage = () => {
                   })
               : null}
 
-            {Object.entries(nodes).map(([id, node]) => (
-              <NodeElement
-                key={id}
-                id={id}
-                node={node}
-                isSelected={checkElementSelected(id, 'node')}
-                onSelect={(e) => handleNodeClick(id, e)}
-                onContextMenu={handleNodeContextMenu}
-                onDragStart={() => {
-                  if (isMultiSelectMode && isElementSelected(id)) {
-                    handleMultiDragStart(id);
-                  } else {
-                    setIsDraggingElement(true);
-                    setDraggingNodeId(id);
-                    setDraggingNodePos({ x: node.x, y: node.y });
-                  }
-                }}
-                onDragMove={(pos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === id) {
-                    handleMultiDragMove(id, pos);
-                  }
-                  setDraggingNodePos(pos);
-                }}
-                onDragEnd={(finalPos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === id) {
-                    handleMultiDragEnd(id, finalPos);
-                  } else {
-                    setIsDraggingElement(false);
-                    setDraggingNodeId(null);
-                    setDraggingNodePos(null);
-                  }
-                }}
-              />
-            ))}
+            <pixiContainer>
+              {Object.entries(nodes).map(([id, node]) => (
+                <NodeElement
+                  key={id}
+                  id={id}
+                  node={node}
+                  isSelected={checkElementSelected(id, 'node')}
+                  onSelect={(e) => handleNodeClick(id, e)}
+                  onContextMenu={handleNodeContextMenu}
+                  onDragStart={() => {
+                    if (isMultiSelectMode && isElementSelected(id)) {
+                      handleMultiDragStart(id);
+                    } else {
+                      setIsDraggingElement(true);
+                      setDraggingNodeId(id);
+                      setDraggingNodePos({ x: node.x, y: node.y });
+                    }
+                  }}
+                  onDragMove={(pos) => {
+                    if (isMultiSelectMode && multiDragLeaderId === id) {
+                      handleMultiDragMove(id, pos);
+                    }
+                    setDraggingNodePos(pos);
+                  }}
+                  onDragEnd={(finalPos) => {
+                    if (isMultiSelectMode && multiDragLeaderId === id) {
+                      handleMultiDragEnd(id, finalPos);
+                    } else {
+                      setIsDraggingElement(false);
+                      setDraggingNodeId(null);
+                      setDraggingNodePos(null);
+                    }
+                  }}
+                />
+              ))}
+            </pixiContainer>
 
-            {Object.entries(orbits).map(([id, orbit]) => (
-              <OrbitElement
-                key={id}
-                id={id}
-                orbit={orbit}
-                isSelected={checkElementSelected(id, 'orbit')}
-                onSelect={(e) => handleOrbitClick(id, e)}
-                onContextMenu={handleOrbitContextMenu}
-                onDragStart={() => {
-                  if (isMultiSelectMode && isElementSelected(id)) {
-                    handleMultiDragStart(id);
-                  } else {
-                    setIsDraggingElement(true);
-                  }
-                }}
-                onDragMove={(pos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === id) {
-                    handleMultiDragMove(id, pos);
-                  }
-                }}
-                onDragEnd={(finalPos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === id) {
-                    handleMultiDragEnd(id, finalPos);
-                  } else {
-                    setIsDraggingElement(false);
-                  }
-                }}
-              />
-            ))}
+            <pixiContainer>
+              {Object.entries(orbits).map(([id, orbit]) => (
+                <OrbitElement
+                  key={id}
+                  id={id}
+                  orbit={orbit}
+                  isSelected={checkElementSelected(id, 'orbit')}
+                  onSelect={(e) => handleOrbitClick(id, e)}
+                  onContextMenu={handleOrbitContextMenu}
+                  onDragStart={() => {
+                    if (isMultiSelectMode && isElementSelected(id)) {
+                      handleMultiDragStart(id);
+                    } else {
+                      setIsDraggingElement(true);
+                    }
+                  }}
+                  onDragMove={(pos) => {
+                    if (isMultiSelectMode && multiDragLeaderId === id) {
+                      handleMultiDragMove(id, pos);
+                    }
+                  }}
+                  onDragEnd={(finalPos) => {
+                    if (isMultiSelectMode && multiDragLeaderId === id) {
+                      handleMultiDragEnd(id, finalPos);
+                    } else {
+                      setIsDraggingElement(false);
+                    }
+                  }}
+                />
+              ))}
+            </pixiContainer>
 
             {isCreatingConnection && connectionStart ? (
               <TempConnectionLine from={connectionStart} to={mousePos} />

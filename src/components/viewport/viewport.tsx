@@ -26,7 +26,7 @@ export const AppViewport = ({
 
     viewport
       .drag()
-      .wheel({ smooth: 5, percent: 3 })
+      .wheel({ smooth: 5, percent: 1 })
       .clampZoom({
         maxWidth: VIEWPORT_WORLD_SIZE,
         minWidth: VIEWPORT_WORLD_SIZE / 100,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useStore } from '@/store';
 import { GamePerksData } from '@/types';
+import { decodeAndParseJsonFile } from '@/utils/decode-text-file';
 import {
   GAME_PERKS_FILENAME,
   uploadGamePerksToS3,
@@ -29,30 +30,64 @@ export const GamePerksUploadDialog = ({ open, onOpenChange }: GamePerksUploadDia
   const s3SecretKey = useStore((state) => state.s3SecretKey);
   const setGamePerks = useStore((state) => state.setGamePerks);
 
-  const [file, setFile] = useState<File | null>(null);
+  const [parsedData, setParsedData] = useState<GamePerksData | null>(null);
+  const [encoding, setEncoding] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
+  const [isParsing, setIsParsing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const parseRequestId = useRef(0);
+
   const resetState = () => {
-    setFile(null);
+    parseRequestId.current += 1;
+    setParsedData(null);
+    setEncoding('');
     setErrors([]);
+    setIsParsing(false);
     setIsUploading(false);
     setIsSuccess(false);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setErrors([]);
-      setIsSuccess(false);
+    if (!selectedFile) return;
+
+    const requestId = parseRequestId.current + 1;
+    parseRequestId.current = requestId;
+
+    setParsedData(null);
+    setEncoding('');
+    setErrors([]);
+    setIsSuccess(false);
+    setIsParsing(true);
+
+    try {
+      const { data, encoding: detectedEncoding } = await decodeAndParseJsonFile(selectedFile);
+      const validationErrors = validateGamePerksData(data);
+
+      if (requestId !== parseRequestId.current) return;
+
+      if (validationErrors.length > 0) {
+        setErrors(validationErrors);
+        return;
+      }
+
+      setParsedData(data as GamePerksData);
+      setEncoding(detectedEncoding);
+    } catch (error) {
+      if (requestId !== parseRequestId.current) return;
+      setErrors([error instanceof Error ? error.message : 'Не удалось прочитать файл']);
+    } finally {
+      if (requestId === parseRequestId.current) {
+        setIsParsing(false);
+      }
     }
   };
 
   const handleUpload = async () => {
-    if (!file) {
-      setErrors(['Выберите файл для загрузки']);
+    if (!parsedData) {
+      setErrors(['Выберите корректный файл для загрузки']);
       return;
     }
 
@@ -66,29 +101,19 @@ export const GamePerksUploadDialog = ({ open, onOpenChange }: GamePerksUploadDia
     setIsSuccess(false);
 
     try {
-      const text = await file.text();
-      const data = JSON.parse(text) as unknown;
-      const validationErrors = validateGamePerksData(data);
-
-      if (validationErrors.length > 0) {
-        setErrors(validationErrors);
-        return;
-      }
-
-      await uploadGamePerksToS3(data as GamePerksData, s3SecretKey);
-      setGamePerks(data as GamePerksData);
-      setFile(null);
+      await uploadGamePerksToS3(parsedData, s3SecretKey);
+      setGamePerks(parsedData);
+      setParsedData(null);
+      setEncoding('');
       setIsSuccess(true);
     } catch (error) {
-      if (error instanceof SyntaxError) {
-        setErrors(['Ошибка парсинга JSON: файл поврежден или имеет неверный формат']);
-      } else {
-        setErrors([error instanceof Error ? error.message : 'Произошла ошибка при загрузке файла']);
-      }
+      setErrors([error instanceof Error ? error.message : 'Произошла ошибка при загрузке файла']);
     } finally {
       setIsUploading(false);
     }
   };
+
+  const perkCount = parsedData ? Object.keys(parsedData).length : 0;
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
@@ -121,6 +146,24 @@ export const GamePerksUploadDialog = ({ open, onOpenChange }: GamePerksUploadDia
             />
           </div>
 
+          {isParsing ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Spinner className="w-4 h-4" />
+              <span>Чтение файла...</span>
+            </div>
+          ) : null}
+
+          {parsedData ? (
+            <div className="flex flex-col gap-1 p-3 bg-muted rounded-md text-xs">
+              <span>
+                Определённая кодировка: <span className="font-medium">{encoding}</span>
+              </span>
+              <span>
+                Перков в файле: <span className="font-medium">{perkCount}</span>
+              </span>
+            </div>
+          ) : null}
+
           {isUploading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Spinner className="w-4 h-4" />
@@ -147,7 +190,7 @@ export const GamePerksUploadDialog = ({ open, onOpenChange }: GamePerksUploadDia
           <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isUploading}>
             Закрыть
           </Button>
-          <Button onClick={handleUpload} disabled={!file || isUploading}>
+          <Button onClick={handleUpload} disabled={!parsedData || isParsing || isUploading}>
             {isUploading ? 'Загрузка...' : 'Загрузить'}
           </Button>
         </DialogFooter>

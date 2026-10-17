@@ -67,7 +67,7 @@ export async function uploadGamePerksToS3(data: GamePerksData, secretKey: string
     Bucket: BUCKET_NAME,
     Key: GAME_PERKS_FILENAME,
     Body: JSON.stringify(data, null, 2),
-    ContentType: 'application/json',
+    ContentType: 'application/json; charset=utf-8',
   });
 
   await s3Client.send(command);

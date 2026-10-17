@@ -14,7 +14,6 @@ import {
   WEB_DEFAULT_SIZE,
   WEB_DEFAULT_SPOKES,
 } from './constants';
-import gamePerksData from './data/game-perks.json';
 import {
   Connection,
   EditorConnections,
@@ -33,6 +32,7 @@ import {
   WebSettings,
 } from './types';
 import { getSecretKey } from './utils/s3-credentials';
+import { fetchGamePerksFromS3 } from './utils/s3-game-perks';
 
 const STORAGE_KEY = 'skyrim-poe-tree-editor-data';
 const MAX_UNDO_STACK_SIZE = 50;
@@ -173,6 +173,9 @@ export type Store = {
   clearS3SecretKey: () => void;
   getS3SecretKey: () => string | null;
 
+  setGamePerks: (data: GamePerksData) => void;
+  loadGamePerksFromS3: () => Promise<void>;
+
   undo: () => void;
   canUndo: () => boolean;
 
@@ -280,7 +283,7 @@ const loadInitialData = () => {
 
 export const useStore = create<Store>((set, get) => {
   const initialData = loadInitialData();
-  const gamePerks = gamePerksData as GamePerksData;
+  const gamePerks = {} as GamePerksData;
   const storedSecretKey = getSecretKey();
 
   return {
@@ -743,6 +746,18 @@ export const useStore = create<Store>((set, get) => {
     },
 
     getS3SecretKey: () => get().s3SecretKey,
+
+    setGamePerks: (data: GamePerksData) => {
+      set({ gamePerks: data, gamePerkIdsSet: new Set(Object.keys(data)) });
+    },
+
+    loadGamePerksFromS3: async () => {
+      const data = await fetchGamePerksFromS3();
+
+      if (data) {
+        set({ gamePerks: data, gamePerkIdsSet: new Set(Object.keys(data)) });
+      }
+    },
 
     undo: () => {
       const state = get();

@@ -7,8 +7,12 @@ import { Viewport } from '@/components/viewport';
 import { useStore } from '@/store';
 
 export const App = () => {
-  const { undo, canUndo, isS3KeyValid, setS3SecretKey } = useStore();
+  const { undo, canUndo, isS3KeyValid, setS3SecretKey, loadGamePerksFromS3 } = useStore();
   const [showS3Modal, setShowS3Modal] = useState(!isS3KeyValid);
+
+  useEffect(() => {
+    loadGamePerksFromS3();
+  }, [loadGamePerksFromS3]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

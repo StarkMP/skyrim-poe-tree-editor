@@ -1,4 +1,4 @@
-import { Key } from 'lucide-react';
+import { Key, Upload } from 'lucide-react';
 
 import {
   Accordion,
@@ -26,9 +26,10 @@ import { useStore } from '@/store';
 
 type GlobalSettingsProps = {
   onChangeS3Key: () => void;
+  onUploadGamePerks: () => void;
 };
 
-export const GlobalSettings = ({ onChangeS3Key }: GlobalSettingsProps) => {
+export const GlobalSettings = ({ onChangeS3Key, onUploadGamePerks }: GlobalSettingsProps) => {
   const {
     gridSettings,
     updateGridSettings,
@@ -63,6 +64,15 @@ export const GlobalSettings = ({ onChangeS3Key }: GlobalSettingsProps) => {
                 className="w-full text-xs"
               >
                 <Key className="w-3 h-3" /> Изменить ключ S3
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onUploadGamePerks}
+                className="w-full text-xs"
+              >
+                <Upload className="w-3 h-3" /> Обновить список перков
               </Button>
 
               <div className="flex w-full items-center justify-between">

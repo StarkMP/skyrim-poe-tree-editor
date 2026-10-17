@@ -10,7 +10,8 @@ const S3_BASE_CONFIG = {
   },
 };
 
-const BUCKET_NAME = 'stb-poe-editor';
+export const BUCKET_NAME = 'stb-poe-editor';
+export const PUBLIC_URL_BASE = 'https://data.poe-tree-editor.skytb.ru';
 
 export function saveSecretKey(secretKey: string): void {
   localStorage.setItem(STORAGE_KEY, secretKey);

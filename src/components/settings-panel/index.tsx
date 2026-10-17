@@ -18,6 +18,7 @@ import { useStore } from '@/store';
 import { Badge } from '../ui/badge';
 import { ConnectionSettings } from './connection-settings';
 import { ExportDialog } from './export-dialog';
+import { GamePerksUploadDialog } from './game-perks-upload-dialog';
 import { GlobalSettings } from './global-settings';
 import { ImageSettings } from './image-settings';
 import { ImportDialog } from './import-dialog';
@@ -40,6 +41,7 @@ export const SettingsPanel = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [s3KeyDialogOpen, setS3KeyDialogOpen] = useState(false);
+  const [gamePerksDialogOpen, setGamePerksDialogOpen] = useState(false);
 
   const selectedNode = selectedElement?.type === 'node' ? nodes[selectedElement.id] : null;
   const selectedImage = selectedElement?.type === 'image' ? images[selectedElement.id] : null;
@@ -99,7 +101,10 @@ export const SettingsPanel = () => {
 
         <div className="flex-1 relative size-full overflow-y-auto">
           <div className="absolute left-0 top-0 size-full">
-            <GlobalSettings onChangeS3Key={handleChangeS3Key} />
+            <GlobalSettings
+              onChangeS3Key={handleChangeS3Key}
+              onUploadGamePerks={() => setGamePerksDialogOpen(true)}
+            />
 
             {selectedElements.size > 0 ? (
               <PanelSection>
@@ -143,6 +148,9 @@ export const SettingsPanel = () => {
 
       {/* S3 Key change dialog */}
       <S3CredentialsModal open={s3KeyDialogOpen} onSuccess={handleS3KeySuccess} allowClose={true} />
+
+      {/* Game perks upload dialog */}
+      <GamePerksUploadDialog open={gamePerksDialogOpen} onOpenChange={setGamePerksDialogOpen} />
 
       {/* Clear confirmation dialog */}
       <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>

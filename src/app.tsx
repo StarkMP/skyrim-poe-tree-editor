@@ -11,7 +11,12 @@ export const App = () => {
   const canUndo = useStore(({ canUndo }) => canUndo);
   const isS3KeyValid = useStore(({ isS3KeyValid }) => isS3KeyValid);
   const setS3SecretKey = useStore(({ setS3SecretKey }) => setS3SecretKey);
+  const loadGamePerksFromS3 = useStore(({ loadGamePerksFromS3 }) => loadGamePerksFromS3);
   const [showS3Modal, setShowS3Modal] = useState(!isS3KeyValid);
+
+  useEffect(() => {
+    loadGamePerksFromS3();
+  }, [loadGamePerksFromS3]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

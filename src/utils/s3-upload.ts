@@ -1,10 +1,7 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { nanoid } from 'nanoid';
 
-import { createS3Client } from './s3-credentials';
-
-const BUCKET_NAME = 'stb-poe-editor';
-const PUBLIC_URL_BASE = 'https://data.poe-tree-editor.skytb.ru';
+import { BUCKET_NAME, createS3Client, PUBLIC_URL_BASE } from './s3-credentials';
 
 async function validateImageDimensions(
   file: File,

@@ -1,4 +1,4 @@
-import { type FederatedMouseEvent, type Graphics, Texture } from 'pixi.js';
+import { type FederatedMouseEvent, type Graphics, Rectangle, Texture } from 'pixi.js';
 import { useMemo } from 'react';
 import useImage from 'use-image';
 
@@ -32,6 +32,7 @@ export const StoneSelectionElement = ({
   const gridSettings = useStore((state) => state.gridSettings);
   const [imageElement] = useImage(stone.imageUrl || '', 'anonymous');
   const texture = useMemo(() => (imageElement ? Texture.from(imageElement) : null), [imageElement]);
+  const hitArea = useMemo(() => new Rectangle(0, 0, stone.width, stone.height), [stone]);
 
   const snap = (pos: Position): Position => {
     if (gridSettings.enabled) {
@@ -76,6 +77,7 @@ export const StoneSelectionElement = ({
       x={stone.x}
       y={stone.y}
       eventMode="static"
+      hitArea={hitArea}
       onPointerDown={onPointerDown}
       onGlobalPointerMove={onGlobalPointerMove}
       onPointerUp={onPointerUp}
@@ -87,7 +89,7 @@ export const StoneSelectionElement = ({
         <pixiGraphics
           draw={(graphics: Graphics) => {
             graphics.clear();
-            graphics.lineStyle(strokeWidth, stroke, 1);
+            graphics.setStrokeStyle({ width: strokeWidth, color: stroke });
             graphics.rect(0, 0, stone.width, stone.height);
             graphics.stroke();
           }}

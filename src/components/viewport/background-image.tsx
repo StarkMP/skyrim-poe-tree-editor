@@ -1,4 +1,4 @@
-import { type FederatedMouseEvent, type Graphics, Texture } from 'pixi.js';
+import { type FederatedMouseEvent, type Graphics, Rectangle, Texture } from 'pixi.js';
 import { useMemo } from 'react';
 import useImage from 'use-image';
 
@@ -34,6 +34,7 @@ export const BackgroundImage = ({
   const gridSettings = useStore((state) => state.gridSettings);
   const [imageElement] = useImage(image.imageUrl || '', 'anonymous');
   const texture = useMemo(() => (imageElement ? Texture.from(imageElement) : null), [imageElement]);
+  const hitArea = useMemo(() => new Rectangle(0, 0, image.width, image.height), [image]);
 
   const snap = (pos: Position): Position => {
     if (gridSettings.enabled) {
@@ -79,10 +80,11 @@ export const BackgroundImage = ({
 
   return (
     <pixiContainer
-      eventMode="static"
       x={image.x}
       y={image.y}
       rotation={rotationRad}
+      eventMode="static"
+      hitArea={hitArea}
       onPointerDown={onPointerDown}
       onGlobalPointerMove={onGlobalPointerMove}
       onPointerUp={onPointerUp}

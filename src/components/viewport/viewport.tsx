@@ -17,9 +17,6 @@ export const AppViewport = ({
   const { app } = useApplication();
   const viewportRef = useRef<Viewport | null>(null);
 
-  const viewportState = useStore(({ viewport }) => viewport);
-  const updateViewport = useStore(({ updateViewport }) => updateViewport);
-
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -28,6 +25,15 @@ export const AppViewport = ({
       smooth: 5,
       percent: 3,
     });
+
+    const { viewport: viewportState, updateViewport } = useStore.getState();
+
+    const initState = () => {
+      viewport.moveCenter(viewportState.x, viewportState.y);
+      viewport.setZoom(viewportState.scale, true);
+    };
+
+    initState();
 
     const updateState = () =>
       updateViewport({
@@ -55,23 +61,6 @@ export const AppViewport = ({
       viewport.removeEventListener('click', handleClick);
     };
   }, [app, onClick]);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const currentPosition = viewport.position;
-    const currentScale = viewport.scale.x;
-
-    if (
-      viewportState.x !== currentPosition.x ||
-      viewportState.y !== currentPosition.y ||
-      viewportState.scale !== currentScale
-    ) {
-      viewport.moveCenter(viewportState.x, viewportState.y);
-      viewport.setZoom(viewportState.scale, true);
-    }
-  }, [viewportState]);
 
   return (
     <pixiViewport

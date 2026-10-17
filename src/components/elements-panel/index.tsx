@@ -16,19 +16,17 @@ const iconByType = {
 } as const;
 
 export const ElementsPanel = () => {
-  const {
-    nodes,
-    images,
-    orbits,
-    stoneSelection,
-    selectedElement,
-    selectElement,
-    deleteNode,
-    deleteImage,
-    deleteOrbit,
-    deleteStoneSelection,
-    requestCenterOnElement,
-  } = useStore();
+  const nodes = useStore((state) => state.nodes);
+  const images = useStore((state) => state.images);
+  const orbits = useStore((state) => state.orbits);
+  const stoneSelection = useStore((state) => state.stoneSelection);
+  const selectedElement = useStore((state) => state.selectedElement);
+  const selectElement = useStore((state) => state.selectElement);
+  const deleteNode = useStore((state) => state.deleteNode);
+  const deleteImage = useStore((state) => state.deleteImage);
+  const deleteOrbit = useStore((state) => state.deleteOrbit);
+  const deleteStoneSelection = useStore((state) => state.deleteStoneSelection);
+  const requestCenterOnElement = useStore((state) => state.requestCenterOnElement);
   const parentRef = useRef<HTMLDivElement | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');

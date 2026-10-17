@@ -12,7 +12,9 @@ type ConnectionSettingsProps = {
 };
 
 export const ConnectionSettings = ({ connectionId, connection }: ConnectionSettingsProps) => {
-  const { updateConnection, removeConnection, nodes } = useStore();
+  const updateConnection = useStore((state) => state.updateConnection);
+  const removeConnection = useStore((state) => state.removeConnection);
+  const nodes = useStore((state) => state.nodes);
 
   const fromNode = nodes[connection.fromId];
   const toNode = nodes[connection.toId];

@@ -26,17 +26,15 @@ import { OrbitSettings } from './orbit-settings';
 import { StoneSelectionSettings } from './stone-selection-settings';
 
 export const SettingsPanel = () => {
-  const {
-    selectedElement,
-    selectedElements,
-    nodes,
-    images,
-    orbits,
-    connections,
-    stoneSelection,
-    clearAll,
-    setS3SecretKey,
-  } = useStore();
+  const selectedElement = useStore((state) => state.selectedElement);
+  const selectedElements = useStore((state) => state.selectedElements);
+  const nodes = useStore((state) => state.nodes);
+  const images = useStore((state) => state.images);
+  const orbits = useStore((state) => state.orbits);
+  const connections = useStore((state) => state.connections);
+  const stoneSelection = useStore((state) => state.stoneSelection);
+  const clearAll = useStore((state) => state.clearAll);
+  const setS3SecretKey = useStore((state) => state.setS3SecretKey);
 
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);

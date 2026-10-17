@@ -613,10 +613,12 @@ export const useStore = create<Store>((set, get) => {
     },
 
     selectElement: (id: string | null, type: SelectableType | null) => {
+      const { selectedElements, multiSelectedElementsData } = get();
       set({
         selectedElement: id && type ? { id, type } : null,
-        selectedElements: new Set(),
-        multiSelectedElementsData: new Map(),
+        selectedElements: selectedElements.size > 0 ? new Set() : selectedElements,
+        multiSelectedElementsData:
+          multiSelectedElementsData.size > 0 ? new Map() : multiSelectedElementsData,
       });
     },
 

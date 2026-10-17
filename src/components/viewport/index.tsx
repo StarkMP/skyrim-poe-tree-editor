@@ -77,36 +77,33 @@ export const Stage = () => {
   const [multiDragLeaderId, setMultiDragLeaderId] = useState<string | null>(null);
   const [multiDraggingNodeIds, setMultiDraggingNodeIds] = useState<Set<string>>(new Set());
 
-  const {
-    nodes,
-    images,
-    orbits,
-    stoneSelection,
-    connections,
-    selectedElement,
-    selectedElements,
-    multiSelectedElementsData,
-    viewportCenterRequest,
-    viewport,
-    gridSettings,
-    webSettings,
-    selectElement,
-    toggleElementSelection,
-    isElementSelected,
-    addNode,
-    addImage,
-    addOrbit,
-    addStoneSelection,
-    deleteNode,
-    deleteImage,
-    deleteOrbit,
-    deleteStoneSelection,
-    addConnection,
-    removeAllConnections,
-    updateViewport,
-    updateMultipleElements,
-    clearCenterRequest,
-  } = useStore();
+  const nodes = useStore((state) => state.nodes);
+  const images = useStore((state) => state.images);
+  const orbits = useStore((state) => state.orbits);
+  const stoneSelection = useStore((state) => state.stoneSelection);
+  const connections = useStore((state) => state.connections);
+  const selectedElement = useStore((state) => state.selectedElement);
+  const selectedElements = useStore((state) => state.selectedElements);
+  const multiSelectedElementsData = useStore((state) => state.multiSelectedElementsData);
+  const viewportCenterRequest = useStore((state) => state.viewportCenterRequest);
+  const gridSettings = useStore((state) => state.gridSettings);
+  const webSettings = useStore((state) => state.webSettings);
+  const selectElement = useStore((state) => state.selectElement);
+  const toggleElementSelection = useStore((state) => state.toggleElementSelection);
+  const isElementSelected = useStore((state) => state.isElementSelected);
+  const addNode = useStore((state) => state.addNode);
+  const addImage = useStore((state) => state.addImage);
+  const addOrbit = useStore((state) => state.addOrbit);
+  const addStoneSelection = useStore((state) => state.addStoneSelection);
+  const deleteNode = useStore((state) => state.deleteNode);
+  const deleteImage = useStore((state) => state.deleteImage);
+  const deleteOrbit = useStore((state) => state.deleteOrbit);
+  const deleteStoneSelection = useStore((state) => state.deleteStoneSelection);
+  const addConnection = useStore((state) => state.addConnection);
+  const removeAllConnections = useStore((state) => state.removeAllConnections);
+  const updateViewport = useStore((state) => state.updateViewport);
+  const updateMultipleElements = useStore((state) => state.updateMultipleElements);
+  const clearCenterRequest = useStore((state) => state.clearCenterRequest);
 
   const clampViewportPosition = useCallback((x: number, y: number, scale: number) => {
     const halfWorld = VIEWPORT_WORLD_SIZE / 2;

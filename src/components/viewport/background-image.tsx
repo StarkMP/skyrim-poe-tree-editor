@@ -30,7 +30,8 @@ export const BackgroundImage = ({
   onDragMove,
   onDragEnd,
 }: BackgroundImageProps) => {
-  const { updateImage, gridSettings } = useStore();
+  const updateImage = useStore((state) => state.updateImage);
+  const gridSettings = useStore((state) => state.gridSettings);
   const [imageElement] = useImage(image.imageUrl || '', 'anonymous');
   const texture = useMemo(() => (imageElement ? Texture.from(imageElement) : null), [imageElement]);
 

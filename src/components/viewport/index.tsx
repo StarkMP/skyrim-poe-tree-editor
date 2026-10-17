@@ -7,7 +7,7 @@ import {
   Point,
 } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
-import { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RefCallback, useCallback, useMemo, useRef, useState } from 'react';
 
 import {
   MAX_ZOOM,
@@ -85,7 +85,6 @@ export const Stage = () => {
   const selectedElement = useStore((state) => state.selectedElement);
   const selectedElements = useStore((state) => state.selectedElements);
   const multiSelectedElementsData = useStore((state) => state.multiSelectedElementsData);
-  const viewportCenterRequest = useStore((state) => state.viewportCenterRequest);
   const gridSettings = useStore((state) => state.gridSettings);
   const webSettings = useStore((state) => state.webSettings);
   const selectElement = useStore((state) => state.selectElement);
@@ -103,7 +102,6 @@ export const Stage = () => {
   const removeAllConnections = useStore((state) => state.removeAllConnections);
   const updateViewport = useStore((state) => state.updateViewport);
   const updateMultipleElements = useStore((state) => state.updateMultipleElements);
-  const clearCenterRequest = useStore((state) => state.clearCenterRequest);
 
   const clampViewportPosition = useCallback((x: number, y: number, scale: number) => {
     const halfWorld = VIEWPORT_WORLD_SIZE / 2;
@@ -257,52 +255,6 @@ export const Stage = () => {
     },
     [isCreatingConnection]
   );
-
-  // useEffect(() => {
-  //   if (!viewportCenterRequest || !stage) return;
-
-  //   const { id, type } = viewportCenterRequest;
-
-  //   let elementX = 0;
-  //   let elementY = 0;
-
-  //   if (type === 'node' && nodes[id]) {
-  //     elementX = nodes[id].x;
-  //     elementY = nodes[id].y;
-  //   } else if (type === 'image' && images[id]) {
-  //     elementX = images[id].x + images[id].width / 2;
-  //     elementY = images[id].y + images[id].height / 2;
-  //   } else if (type === 'orbit' && orbits[id]) {
-  //     elementX = orbits[id].x;
-  //     elementY = orbits[id].y;
-  //   } else if (type === 'stone' && stoneSelection) {
-  //     elementX = stoneSelection.x + stoneSelection.width / 2;
-  //     elementY = stoneSelection.y + stoneSelection.height / 2;
-  //   } else {
-  //     return;
-  //   }
-
-  //   const scale = stage.scale.x;
-  //   const container = containerRef.current;
-  //   if (!container) return;
-  //   const width = container.offsetWidth;
-  //   const height = container.offsetHeight;
-
-  //   const newX = width / 2 - elementX * scale;
-  //   const newY = height / 2 - elementY * scale;
-
-  //   stage.position.set(newX, newY);
-
-  //   clearCenterRequest();
-  // }, [
-  //   viewportCenterRequest?.timestamp,
-  //   nodes,
-  //   images,
-  //   orbits,
-  //   stoneSelection,
-  //   clearCenterRequest,
-  //   stageReady,
-  // ]);
 
   const checkElementSelected = (id: string, type: ElementType) => {
     if (isMultiSelectMode) return isElementSelected(id);

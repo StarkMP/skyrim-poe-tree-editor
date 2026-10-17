@@ -3,6 +3,7 @@ import { FederatedEventHandler, FederatedPointerEvent } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { useEffect, useRef } from 'react';
 
+import { VIEWPORT_WORLD_SIZE } from '@/constants';
 import { useStore } from '@/store';
 
 export const AppViewport = ({
@@ -17,14 +18,19 @@ export const AppViewport = ({
   const { app } = useApplication();
   const viewportRef = useRef<Viewport | null>(null);
 
+  const viewportCenterRequest = useStore((state) => state.viewportCenterRequest);
+
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
-    viewport.drag().wheel({
-      smooth: 5,
-      percent: 3,
-    });
+    viewport
+      .drag()
+      .wheel({ smooth: 5, percent: 3 })
+      .clampZoom({
+        maxWidth: VIEWPORT_WORLD_SIZE,
+        minWidth: VIEWPORT_WORLD_SIZE / 100,
+      });
 
     const { viewport: viewportState, updateViewport } = useStore.getState();
 
@@ -50,6 +56,43 @@ export const AppViewport = ({
       viewport.off('zoomed-end', updateState);
     };
   }, []);
+
+  useEffect(() => {
+    if (!viewportCenterRequest || !viewportRef.current) return;
+
+    const { id, type } = viewportCenterRequest;
+
+    const { nodes, images, orbits, stoneSelection, clearCenterRequest } = useStore.getState();
+
+    let elementX = 0;
+    let elementY = 0;
+
+    if (type === 'node' && nodes[id]) {
+      elementX = nodes[id].x;
+      elementY = nodes[id].y;
+    } else if (type === 'image' && images[id]) {
+      elementX = images[id].x + images[id].width / 2;
+      elementY = images[id].y + images[id].height / 2;
+    } else if (type === 'orbit' && orbits[id]) {
+      elementX = orbits[id].x;
+      elementY = orbits[id].y;
+    } else if (type === 'stone' && stoneSelection) {
+      elementX = stoneSelection.x + stoneSelection.width / 2;
+      elementY = stoneSelection.y + stoneSelection.height / 2;
+    } else {
+      return;
+    }
+
+    const globalPoint = viewportRef.current.toGlobal({ x: elementX, y: elementY });
+
+    const newPos = viewportRef.current.toWorld(globalPoint);
+
+    viewportRef.current.animate({
+      position: newPos,
+      time: 300,
+      callbackOnComplete: clearCenterRequest,
+    });
+  }, [viewportCenterRequest?.timestamp]);
 
   useEffect(() => {
     const viewport = viewportRef.current;

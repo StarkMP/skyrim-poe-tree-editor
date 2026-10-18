@@ -5,7 +5,8 @@ import { Viewport } from 'pixi-viewport';
 import { RefCallback, useCallback, useMemo, useRef, useState } from 'react';
 
 import { STONE_SELECTION_ID, VIEWPORT_BACKGROUND_COLOR } from '@/constants';
-import { ElementType, useStore } from '@/store';
+import { ElementType, SelectableType, useStore } from '@/store';
+import { Connection } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
 
 import { BackgroundImage } from './background-image';
@@ -29,6 +30,14 @@ const preventDefaultWheelRefCallback: RefCallback<HTMLDivElement> = (element) =>
   element.addEventListener('wheel', prevent);
   return () => element.removeEventListener('wheel', prevent);
 };
+
+const filterNodeConnections = (nodeId: string | null, connections: [string, Connection][]) =>
+  nodeId ? connections.filter(([, conn]) => conn.fromId === nodeId || conn.toId === nodeId) : [];
+
+const filterMultiNodesConnections = (nodeIds: Set<string>, connections: [string, Connection][]) =>
+  nodeIds.size > 0
+    ? connections.filter(([, conn]) => nodeIds.has(conn.fromId) || nodeIds.has(conn.toId))
+    : [];
 
 export const Stage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -112,7 +121,7 @@ export const Stage = () => {
     }
   }, [isCreatingConnection, selectElement]);
 
-  const checkElementSelected = (id: string, type: ElementType) => {
+  const checkElementSelected = (id: string, type: SelectableType) => {
     if (isMultiSelectMode) return isElementSelected(id);
     return selectedElement?.id === id && selectedElement?.type === type;
   };
@@ -425,6 +434,16 @@ export const Stage = () => {
 
   const isMultiSelectMode = selectedElements.size > 0;
 
+  const connectionsArray = useMemo(() => Object.entries(connections), [connections]);
+  const draggingNodeConnections = useMemo(
+    () => filterNodeConnections(draggingNodeId, connectionsArray),
+    [connectionsArray, draggingNodeId]
+  );
+  const multiDraggingNodeConnections = useMemo(
+    () => filterMultiNodesConnections(multiDraggingNodeIds, connectionsArray),
+    [connectionsArray, multiDraggingNodeIds]
+  );
+
   return (
     <div ref={preventDefaultWheelRefCallback} className="size-full">
       <div ref={containerRef} className="size-full">
@@ -512,7 +531,7 @@ export const Stage = () => {
             ) : null}
 
             <pixiContainer>
-              {Object.entries(connections).map(([connectionId, connection]) => {
+              {connectionsArray.map(([connectionId, connection]) => {
                 const fromNode = nodes[connection.fromId];
                 const toNode = nodes[connection.toId];
                 if (!fromNode || !toNode) return null;
@@ -530,11 +549,7 @@ export const Stage = () => {
                     from={fromNode}
                     to={toNode}
                     curvature={connection.curvature}
-                    isSelected={
-                      selectedElement?.id === connectionId
-                        ? selectedElement?.type === 'connection'
-                        : null
-                    }
+                    isSelected={checkElementSelected(connectionId, 'connection')}
                     onSelect={() => handleConnectionClick(connectionId)}
                     opacity={isHidden ? 0 : 1}
                   />
@@ -543,53 +558,44 @@ export const Stage = () => {
             </pixiContainer>
 
             {draggingNodeId && draggingNodePos
-              ? Object.entries(connections)
-                  .filter(
-                    ([, conn]) => conn.fromId === draggingNodeId || conn.toId === draggingNodeId
-                  )
-                  .map(([connId, connection]) => {
-                    const connectedId =
-                      connection.fromId === draggingNodeId ? connection.toId : connection.fromId;
-                    const connectedNode = nodes[connectedId];
-                    if (!connectedNode) return null;
+              ? draggingNodeConnections.map(([connId, connection]) => {
+                  const connectedId =
+                    connection.fromId === draggingNodeId ? connection.toId : connection.fromId;
+                  const connectedNode = nodes[connectedId];
+                  if (!connectedNode) return null;
 
-                    const shouldInvertCurvature =
-                      connection.fromId === connectedId && connection.toId === draggingNodeId;
+                  const shouldInvertCurvature =
+                    connection.fromId === connectedId && connection.toId === draggingNodeId;
 
-                    const curvature = connection.curvature ?? 0;
-                    const adjustedCurvature = shouldInvertCurvature ? -curvature : curvature;
+                  const curvature = connection.curvature ?? 0;
+                  const adjustedCurvature = shouldInvertCurvature ? -curvature : curvature;
 
-                    return (
-                      <TempConnectionLine
-                        key={`temp-${connId}`}
-                        from={draggingNodePos}
-                        to={{ x: connectedNode.x, y: connectedNode.y }}
-                        curvature={adjustedCurvature}
-                      />
-                    );
-                  })
+                  return (
+                    <TempConnectionLine
+                      key={`temp-${connId}`}
+                      from={draggingNodePos}
+                      to={{ x: connectedNode.x, y: connectedNode.y }}
+                      curvature={adjustedCurvature}
+                    />
+                  );
+                })
               : null}
 
             {multiDraggingNodeIds.size > 0
-              ? Object.entries(connections)
-                  .filter(
-                    ([, conn]) =>
-                      multiDraggingNodeIds.has(conn.fromId) || multiDraggingNodeIds.has(conn.toId)
-                  )
-                  .map(([connId, connection]) => {
-                    const fromNode = nodes[connection.fromId];
-                    const toNode = nodes[connection.toId];
-                    if (!fromNode || !toNode) return null;
+              ? multiDraggingNodeConnections.map(([connId, connection]) => {
+                  const fromNode = nodes[connection.fromId];
+                  const toNode = nodes[connection.toId];
+                  if (!fromNode || !toNode) return null;
 
-                    return (
-                      <TempConnectionLine
-                        key={`temp-multi-${connId}`}
-                        from={{ x: fromNode.x, y: fromNode.y }}
-                        to={{ x: toNode.x, y: toNode.y }}
-                        curvature={connection.curvature ?? 0}
-                      />
-                    );
-                  })
+                  return (
+                    <TempConnectionLine
+                      key={`temp-multi-${connId}`}
+                      from={{ x: fromNode.x, y: fromNode.y }}
+                      to={{ x: toNode.x, y: toNode.y }}
+                      curvature={connection.curvature ?? 0}
+                    />
+                  );
+                })
               : null}
 
             <pixiContainer>

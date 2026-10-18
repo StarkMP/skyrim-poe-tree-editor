@@ -1,6 +1,6 @@
 import { Application, type ApplicationRef, extend } from '@pixi/react';
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { type FederatedMouseEvent, type FederatedPointerEvent } from 'pixi.js';
+import { type FederatedMouseEvent } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { RefCallback, useCallback, useMemo, useRef, useState } from 'react';
 
@@ -55,7 +55,6 @@ export const Stage = () => {
     y: number;
   } | null>(null);
 
-  const [isDraggingElement, setIsDraggingElement] = useState(false);
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [draggingNodePos, setDraggingNodePos] = useState<Position | null>(null);
 
@@ -104,17 +103,14 @@ export const Stage = () => {
     });
   }, []);
 
-  const handleStageClick = useCallback(
-    (e: FederatedPointerEvent) => {
-      selectElement(null, null);
+  const handleStageClick = useCallback(() => {
+    selectElement(null, null);
 
-      if (isCreatingConnection) {
-        setIsCreatingConnection(false);
-        setConnectionStart(null);
-      }
-    },
-    [isCreatingConnection, selectElement]
-  );
+    if (isCreatingConnection) {
+      setIsCreatingConnection(false);
+      setConnectionStart(null);
+    }
+  }, [isCreatingConnection, selectElement]);
 
   const checkElementSelected = (id: string, type: ElementType) => {
     if (isMultiSelectMode) return isElementSelected(id);
@@ -352,7 +348,6 @@ export const Stage = () => {
     setMultiDragStartPositions(startPositions);
     setMultiDragLeaderId(leaderId);
     setMultiDraggingNodeIds(draggingNodes);
-    setIsDraggingElement(true);
   };
 
   const handleMultiDragMove = (leaderId: string, newLeaderPos: Position) => {
@@ -393,7 +388,6 @@ export const Stage = () => {
       setMultiDragStartPositions(new Map());
       setMultiDragLeaderId(null);
       setMultiDraggingNodeIds(new Set());
-      setIsDraggingElement(false);
       return;
     }
 
@@ -427,7 +421,6 @@ export const Stage = () => {
     setMultiDragStartPositions(new Map());
     setMultiDragLeaderId(null);
     setMultiDraggingNodeIds(new Set());
-    setIsDraggingElement(false);
   };
 
   const isMultiSelectMode = selectedElements.size > 0;
@@ -479,8 +472,6 @@ export const Stage = () => {
                 onDragStart={() => {
                   if (isMultiSelectMode && isElementSelected(id)) {
                     handleMultiDragStart(id);
-                  } else {
-                    setIsDraggingElement(true);
                   }
                 }}
                 onDragMove={(pos) => {
@@ -491,8 +482,6 @@ export const Stage = () => {
                 onDragEnd={(finalPos) => {
                   if (isMultiSelectMode && multiDragLeaderId === id) {
                     handleMultiDragEnd(id, finalPos);
-                  } else {
-                    setIsDraggingElement(false);
                   }
                 }}
               />
@@ -507,8 +496,6 @@ export const Stage = () => {
                 onDragStart={() => {
                   if (isMultiSelectMode && isElementSelected(STONE_SELECTION_ID)) {
                     handleMultiDragStart(STONE_SELECTION_ID);
-                  } else {
-                    setIsDraggingElement(true);
                   }
                 }}
                 onDragMove={(pos) => {
@@ -519,8 +506,6 @@ export const Stage = () => {
                 onDragEnd={(finalPos) => {
                   if (isMultiSelectMode && multiDragLeaderId === STONE_SELECTION_ID) {
                     handleMultiDragEnd(STONE_SELECTION_ID, finalPos);
-                  } else {
-                    setIsDraggingElement(false);
                   }
                 }}
               />
@@ -620,7 +605,6 @@ export const Stage = () => {
                     if (isMultiSelectMode && isElementSelected(id)) {
                       handleMultiDragStart(id);
                     } else {
-                      setIsDraggingElement(true);
                       setDraggingNodeId(id);
                       setDraggingNodePos({ x: node.x, y: node.y });
                     }
@@ -635,7 +619,6 @@ export const Stage = () => {
                     if (isMultiSelectMode && multiDragLeaderId === id) {
                       handleMultiDragEnd(id, finalPos);
                     } else {
-                      setIsDraggingElement(false);
                       setDraggingNodeId(null);
                       setDraggingNodePos(null);
                     }
@@ -656,8 +639,6 @@ export const Stage = () => {
                   onDragStart={() => {
                     if (isMultiSelectMode && isElementSelected(id)) {
                       handleMultiDragStart(id);
-                    } else {
-                      setIsDraggingElement(true);
                     }
                   }}
                   onDragMove={(pos) => {
@@ -668,8 +649,6 @@ export const Stage = () => {
                   onDragEnd={(finalPos) => {
                     if (isMultiSelectMode && multiDragLeaderId === id) {
                       handleMultiDragEnd(id, finalPos);
-                    } else {
-                      setIsDraggingElement(false);
                     }
                   }}
                 />

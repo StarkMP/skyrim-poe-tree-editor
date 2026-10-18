@@ -1,7 +1,7 @@
 import { useApplication } from '@pixi/react';
-import { FederatedEventHandler, FederatedPointerEvent } from 'pixi.js';
+import { FederatedEvent, FederatedEventHandler, FederatedPointerEvent } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { VIEWPORT_WORLD_SIZE } from '@/constants';
 import { useStore } from '@/store';
@@ -19,15 +19,21 @@ export const AppViewport = ({
 }) => {
   const { app } = useApplication();
   const viewportRef = useRef<Viewport | null>(null);
+  const [viewport, setViewport] = useState<Viewport | null>(null);
 
   const viewportCenterRequest = useStore((state) => state.viewportCenterRequest);
+
+  const handleViewportRef = useCallback((instance: Viewport | null) => {
+    viewportRef.current = instance;
+    setViewport(instance);
+  }, []);
 
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
     viewport
-      .drag()
+      .drag({ mouseButtons: 'left' })
       .wheel({ smooth: 5, percent: 1 })
       .clampZoom({
         maxWidth: VIEWPORT_WORLD_SIZE,
@@ -99,17 +105,24 @@ export const AppViewport = ({
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport || !onClick) return;
-    viewport.hitArea = app.screen;
-    const handleClick = (e: FederatedPointerEvent) => e.target === viewport && onClick(e);
-    viewport.addEventListener('click', handleClick);
-    return () => {
-      viewport.removeEventListener('click', handleClick);
+
+    // pixi-viewport emits its own click event: it is not emitted when the pointer
+    // was moved between pointerdown and pointerup (camera pan or element drag)
+    const handleClicked = ({ event }: { event: FederatedEvent }) => {
+      const pointerEvent = event as FederatedPointerEvent;
+      if (pointerEvent.button !== 0 || pointerEvent.target !== viewport) return;
+      onClick(pointerEvent);
     };
-  }, [app, onClick]);
+
+    viewport.on('clicked', handleClicked);
+    return () => {
+      viewport.off('clicked', handleClicked);
+    };
+  }, [onClick]);
 
   return (
     <pixiViewport
-      ref={viewportRef}
+      ref={handleViewportRef}
       screenWidth={app.screen.width}
       screenHeight={app.screen.height}
       // worldWidth={app.screen.width}
@@ -121,7 +134,7 @@ export const AppViewport = ({
       ticker={app.ticker}
       onRightClick={onRightClick}
     >
-      <ViewportProvider viewport={viewportRef.current}>{children}</ViewportProvider>
+      <ViewportProvider viewport={viewport}>{children}</ViewportProvider>
     </pixiViewport>
   );
 };

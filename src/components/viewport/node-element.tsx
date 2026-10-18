@@ -107,7 +107,14 @@ export const NodeElement = ({
     });
   };
 
-  const { onPointerDown, onGlobalPointerMove, onPointerUp, onPointerUpOutside } = useElementDrag({
+  const {
+    onPointerDown,
+    onGlobalPointerMove,
+    onPointerUp,
+    onPointerUpOutside,
+    onPointerCancel,
+    wasDragged,
+  } = useElementDrag({
     isDraggable: isSelected === true,
     snap,
     finalize,
@@ -124,6 +131,7 @@ export const NodeElement = ({
 
   const handleClick = (e: FederatedMouseEvent) => {
     e.stopPropagation();
+    if (wasDragged()) return;
     onSelect(e);
   };
 
@@ -136,6 +144,7 @@ export const NodeElement = ({
       onGlobalPointerMove={onGlobalPointerMove}
       onPointerUp={onPointerUp}
       onPointerUpOutside={onPointerUpOutside}
+      onPointerCancel={onPointerCancel}
       onRightClick={handleContextMenu}
       onClick={handleClick}
     >

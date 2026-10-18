@@ -60,7 +60,7 @@ export const StoneSelectionElement = ({
   const handleContextMenu = (e: FederatedMouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onContextMenu(e.global.x, e.global.y);
+    onContextMenu(e.client.x, e.client.y);
   };
 
   const handleClick = (e: FederatedMouseEvent) => {

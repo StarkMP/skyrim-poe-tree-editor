@@ -90,24 +90,19 @@ export const Stage = () => {
   const removeAllConnections = useStore((state) => state.removeAllConnections);
   const updateMultipleElements = useStore((state) => state.updateMultipleElements);
 
-  const handleStageRightClick = useCallback(
-    (e: FederatedMouseEvent) => {
-      if (!stage) return;
+  const handleStageRightClick = useCallback((e: FederatedMouseEvent) => {
+    const viewport = e.target;
+    if (!viewport) return;
 
-      const canvasPos = {
-        x: (e.global.x - stage.x) / stage.scale.x,
-        y: (e.global.y - stage.y) / stage.scale.y,
-      };
+    const canvasPos = e.getLocalPosition(viewport);
 
-      setContextMenu({
-        x: e.global.x,
-        y: e.global.y,
-        canvasX: canvasPos.x,
-        canvasY: canvasPos.y,
-      });
-    },
-    [stage]
-  );
+    setContextMenu({
+      x: e.client.x,
+      y: e.client.y,
+      canvasX: canvasPos.x,
+      canvasY: canvasPos.y,
+    });
+  }, []);
 
   const handleStageClick = useCallback(
     (e: FederatedPointerEvent) => {

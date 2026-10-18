@@ -69,7 +69,7 @@ export const OrbitElement = ({
   const handleContextMenu = (e: FederatedMouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onContextMenu(id, e.global.x, e.global.y);
+    onContextMenu(id, e.client.x, e.client.y);
   };
 
   const handleClick = (e: FederatedMouseEvent) => {
@@ -103,7 +103,6 @@ export const OrbitElement = ({
           graphics.circle(0, 0, orbit.radius);
           graphics.stroke();
         }}
-        eventMode="none"
       />
 
       <pixiGraphics
@@ -116,7 +115,6 @@ export const OrbitElement = ({
           graphics.circle(0, 0, 10);
           graphics.stroke();
         }}
-        eventMode="none"
       />
 
       {orbitPoints.length > 0 ? (
@@ -134,7 +132,6 @@ export const OrbitElement = ({
               graphics.stroke();
             }
           }}
-          eventMode="none"
         />
       ) : null}
 
@@ -149,7 +146,6 @@ export const OrbitElement = ({
               graphics.stroke();
             }
           }}
-          eventMode="none"
         />
       ) : null}
     </pixiContainer>

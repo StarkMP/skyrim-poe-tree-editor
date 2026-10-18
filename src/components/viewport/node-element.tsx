@@ -119,11 +119,11 @@ export const NodeElement = ({
   const handleContextMenu = (e: FederatedMouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onContextMenu(id, e.global.x, e.global.y);
+    onContextMenu(id, e.client.x, e.client.y);
   };
 
   const handleClick = (e: FederatedMouseEvent) => {
-    // e.stopPropagation();
+    e.stopPropagation();
     onSelect(e);
   };
 

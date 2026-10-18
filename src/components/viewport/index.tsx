@@ -1,22 +1,10 @@
 import { Application, type ApplicationRef, extend } from '@pixi/react';
 import { Container, Graphics, Sprite } from 'pixi.js';
-import {
-  type FederatedMouseEvent,
-  type FederatedPointerEvent,
-  type FederatedWheelEvent,
-  Point,
-} from 'pixi.js';
+import { type FederatedMouseEvent, type FederatedPointerEvent } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { RefCallback, useCallback, useMemo, useRef, useState } from 'react';
 
-import {
-  MAX_ZOOM,
-  MIN_ZOOM,
-  STONE_SELECTION_ID,
-  VIEWPORT_BACKGROUND_COLOR,
-  VIEWPORT_WORLD_SIZE,
-  ZOOM_SPEED,
-} from '@/constants';
+import { STONE_SELECTION_ID, VIEWPORT_BACKGROUND_COLOR } from '@/constants';
 import { ElementType, useStore } from '@/store';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
 
@@ -28,6 +16,7 @@ import { NodeElement } from './node-element';
 import { OrbitElement } from './orbit-element';
 import { StoneSelectionElement } from './stone-selection-element';
 import { TempConnectionLine } from './temp-connection-line';
+import { TempConnectionMoving } from './temp-connection-moving';
 import type { Position } from './use-element-drag';
 import { AppViewport } from './viewport';
 import { WebLayer } from './web-layer';
@@ -49,7 +38,6 @@ export const Stage = () => {
     () => (stageReady ? appRef.current?.getApplication()?.stage : null),
     [stageReady]
   );
-  const viewportUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -66,7 +54,7 @@ export const Stage = () => {
     x: number;
     y: number;
   } | null>(null);
-  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
   const [isDraggingElement, setIsDraggingElement] = useState(false);
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [draggingNodePos, setDraggingNodePos] = useState<Position | null>(null);
@@ -100,115 +88,7 @@ export const Stage = () => {
   const deleteStoneSelection = useStore((state) => state.deleteStoneSelection);
   const addConnection = useStore((state) => state.addConnection);
   const removeAllConnections = useStore((state) => state.removeAllConnections);
-  const updateViewport = useStore((state) => state.updateViewport);
   const updateMultipleElements = useStore((state) => state.updateMultipleElements);
-
-  const clampViewportPosition = useCallback((x: number, y: number, scale: number) => {
-    const halfWorld = VIEWPORT_WORLD_SIZE / 2;
-    const width = containerRef.current?.offsetWidth ?? 0;
-    const height = containerRef.current?.offsetHeight ?? 0;
-    const maxX = halfWorld * scale;
-    const minX = width - halfWorld * scale;
-    const maxY = halfWorld * scale;
-    const minY = height - halfWorld * scale;
-
-    return {
-      x: Math.max(minX, Math.min(maxX, x)),
-      y: Math.max(minY, Math.min(maxY, y)),
-    };
-  }, []);
-
-  const handleWheel = useCallback(
-    (e: FederatedWheelEvent) => {
-      if (!stage) return;
-      e?.preventDefault();
-
-      const oldScale = stage.scale.x;
-      const pointer = { x: e.global.x, y: e.global.y };
-
-      const mousePointTo = {
-        x: (e.global.x - stage.x) / stage.scale.x,
-        y: (e.global.y - stage.y) / stage.scale.y,
-      };
-
-      const direction = e.deltaY > 0 ? -1 : 1;
-      const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, oldScale + direction * ZOOM_SPEED));
-
-      stage.scale.set(newScale);
-
-      let newPos = {
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale,
-      };
-
-      newPos = clampViewportPosition(newPos.x, newPos.y, newScale);
-
-      stage.position.set(newPos.x, newPos.y);
-
-      if (viewportUpdateTimerRef.current) {
-        clearTimeout(viewportUpdateTimerRef.current);
-      }
-
-      viewportUpdateTimerRef.current = setTimeout(() => {
-        updateViewport({
-          x: newPos.x,
-          y: newPos.y,
-          scale: newScale,
-        });
-      }, 100);
-    },
-    [updateViewport, clampViewportPosition]
-  );
-
-  const panning = useRef(false);
-  const panStartScreen = useRef(new Point());
-  const panStartWorld = useRef(new Point());
-
-  const handleStagePointerDown = useCallback((e: FederatedPointerEvent) => {
-    if (!stage || e.target !== stage) return;
-    panning.current = true;
-    panStartScreen.current.set(e.global.x, e.global.y);
-    panStartWorld.current.set(stage.x, stage.y);
-    e.stopPropagation();
-  }, []);
-
-  const handleStageGlobalPointerMove = useCallback(
-    (e: FederatedPointerEvent) => {
-      if (!stage || !panning.current) return;
-
-      const dx = (e.global.x - panStartScreen.current.x) / stage.scale.x;
-      const dy = (e.global.y - panStartScreen.current.y) / stage.scale.y;
-
-      let newPos = {
-        x: panStartWorld.current.x + dx,
-        y: panStartWorld.current.y + dy,
-      };
-      newPos = clampViewportPosition(newPos.x, newPos.y, stage.scale.x);
-      stage.position.set(newPos.x, newPos.y);
-    },
-    [clampViewportPosition]
-  );
-
-  const handleStagePointerUp = useCallback(
-    (e: FederatedPointerEvent) => {
-      if (!panning.current) return;
-      panning.current = false;
-
-      if (!stage) return;
-
-      const pos = { x: stage.x, y: stage.y };
-      const scale = stage.scale.x;
-      const clamped = clampViewportPosition(pos.x, pos.y, scale);
-      stage.position.set(clamped.x, clamped.y);
-
-      updateViewport({
-        x: clamped.x,
-        y: clamped.y,
-        scale,
-      });
-    },
-    [updateViewport, clampViewportPosition]
-  );
 
   const handleStageRightClick = useCallback(
     (e: FederatedMouseEvent) => {
@@ -239,21 +119,6 @@ export const Stage = () => {
       }
     },
     [isCreatingConnection, selectElement]
-  );
-
-  const handleStageGlobalPointerMoveForConnection = useCallback(
-    (e: FederatedPointerEvent) => {
-      if (!isCreatingConnection) return;
-
-      if (!stage) return;
-
-      const canvasPos = {
-        x: (e.global.x - stage.x) / stage.scale.x,
-        y: (e.global.y - stage.y) / stage.scale.y,
-      };
-      setMousePos({ x: canvasPos.x, y: canvasPos.y });
-    },
-    [isCreatingConnection]
   );
 
   const checkElementSelected = (id: string, type: ElementType) => {
@@ -817,7 +682,7 @@ export const Stage = () => {
             </pixiContainer>
 
             {isCreatingConnection && connectionStart ? (
-              <TempConnectionLine from={connectionStart} to={mousePos} />
+              <TempConnectionMoving connectionStart={connectionStart} />
             ) : null}
           </AppViewport>
         </Application>

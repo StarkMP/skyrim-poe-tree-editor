@@ -6,6 +6,8 @@ import { useEffect, useRef } from 'react';
 import { VIEWPORT_WORLD_SIZE } from '@/constants';
 import { useStore } from '@/store';
 
+import { ViewportProvider } from './context';
+
 export const AppViewport = ({
   children,
   onClick,
@@ -119,7 +121,7 @@ export const AppViewport = ({
       ticker={app.ticker}
       onRightClick={onRightClick}
     >
-      {children}
+      <ViewportProvider viewport={viewportRef.current}>{children}</ViewportProvider>
     </pixiViewport>
   );
 };

@@ -61,7 +61,7 @@ export const TempConnectionLine = ({ from, to, curvature = 0 }: TempConnectionLi
     <pixiGraphics
       draw={(graphics: Graphics) => {
         graphics.clear();
-        graphics.lineStyle(4, CONNECTION_TEMP_COLOR, 1);
+        graphics.setStrokeStyle({ width: 4, color: CONNECTION_TEMP_COLOR });
         drawPolyline(graphics, curvePoints);
         graphics.stroke();
       }}

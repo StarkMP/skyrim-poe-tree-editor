@@ -1,8 +1,8 @@
-import { Application, type ApplicationRef, extend } from '@pixi/react';
+import { Application, extend } from '@pixi/react';
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { type FederatedMouseEvent } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
-import { RefCallback, useCallback, useMemo, useRef, useState } from 'react';
+import { RefCallback, useCallback, useRef, useState } from 'react';
 
 import { STONE_SELECTION_ID, VIEWPORT_BACKGROUND_COLOR } from '@/constants';
 import { useStore } from '@/store';
@@ -11,14 +11,14 @@ import { snapToRotatedGrid } from '@/utils/grid-helpers';
 import { BackgroundImages } from './background-images';
 import { Connections } from './connections';
 import { ContextMenu } from './context-menu';
+import { Grid } from './grid';
 import { Nodes } from './nodes';
 import { Orbits } from './orbits';
 import { StoneSelection } from './stone-selection';
 import { TempConnectionMoving } from './temp-connection-moving';
 import { TempConnectionsDragging } from './temp-connections-dragging';
-import { GridLayer } from './tree-elements/grid-layer';
-import { WebLayer } from './tree-elements/web-layer';
 import { AppViewport } from './viewport';
+import { Web } from './web';
 
 extend({ Viewport, Container, Graphics, Sprite });
 
@@ -31,12 +31,6 @@ const preventDefaultWheelRefCallback: RefCallback<HTMLDivElement> = (element) =>
 
 export const Stage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const appRef = useRef<ApplicationRef>(null);
-  const [stageReady, setStageReady] = useState(false);
-  const stage = useMemo(
-    () => (stageReady ? appRef.current?.getApplication()?.stage : null),
-    [stageReady]
-  );
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -55,8 +49,6 @@ export const Stage = () => {
   } | null>(null);
 
   const stoneSelection = useStore((state) => state.stoneSelection);
-  const gridSettings = useStore((state) => state.gridSettings);
-  const webSettings = useStore((state) => state.webSettings);
   const selectElement = useStore((state) => state.selectElement);
   const addNode = useStore((state) => state.addNode);
   const addImage = useStore((state) => state.addImage);
@@ -96,6 +88,8 @@ export const Stage = () => {
       let x = contextMenu.canvasX;
       let y = contextMenu.canvasY;
 
+      const { gridSettings } = useStore.getState();
+
       if (gridSettings.enabled) {
         const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
         x = snapped.x;
@@ -112,6 +106,8 @@ export const Stage = () => {
     if (contextMenu) {
       let x = contextMenu.canvasX;
       let y = contextMenu.canvasY;
+
+      const { gridSettings } = useStore.getState();
 
       if (gridSettings.enabled) {
         const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
@@ -167,6 +163,8 @@ export const Stage = () => {
     if (contextMenu) {
       let x = contextMenu.canvasX;
       let y = contextMenu.canvasY;
+
+      const { gridSettings } = useStore.getState();
 
       if (gridSettings.enabled) {
         const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
@@ -233,37 +231,18 @@ export const Stage = () => {
     <div ref={preventDefaultWheelRefCallback} className="size-full">
       <div ref={containerRef} className="size-full">
         <Application
-          ref={appRef}
           resizeTo={containerRef}
           backgroundColor={VIEWPORT_BACKGROUND_COLOR}
           antialias
           autoStart
           onInit={(app) => {
             (window as any).__PIXI_APP__ = app;
-            setStageReady(true);
           }}
         >
           <AppViewport onClick={handleStageClick} onRightClick={handleStageRightClick}>
-            <WebLayer
-              enabled={webSettings.enabled}
-              size={webSettings.size}
-              spokes={webSettings.spokes}
-              rotation={webSettings.rotation}
-              innerRadius={webSettings.innerRadius}
-              concentricCircles={webSettings.concentricCircles}
-            />
+            <Web />
 
-            <GridLayer
-              gridSize={gridSettings.size}
-              enabled={gridSettings.enabled}
-              rotation={gridSettings.rotation}
-              stagePos={{ x: stage?.x ?? 0, y: stage?.y ?? 0 }}
-              stageSize={{
-                width: containerRef.current?.offsetWidth ?? 0,
-                height: containerRef.current?.offsetHeight ?? 0,
-              }}
-              scale={stage?.scale.x ?? 1}
-            />
+            <Grid />
 
             <BackgroundImages onContextMenu={handleImageContextMenu} />
 

@@ -1,3 +1,7 @@
+import { Viewport } from 'pixi-viewport';
+
+import { ViewportState } from '@/types';
+
 /**
  * Выравнивает значение по сетке
  * @param value - координата для выравнивания
@@ -55,23 +59,26 @@ export const snapToRotatedGrid = (
   return rotatePoint(snapped.x, snapped.y, rotation);
 };
 
-/**
- * Вычисляет видимую область viewport в мировых координатах
- * @param stagePos - позиция stage
- * @param stageSize - размер stage
- * @param scale - масштаб
- * @returns границы видимой области
- */
-export const getVisibleRect = (
-  stagePos: { x: number; y: number },
-  stageSize: { width: number; height: number },
-  scale: number
-) => ({
-  x1: -stagePos.x / scale,
-  y1: -stagePos.y / scale,
-  x2: (-stagePos.x + stageSize.width) / scale,
-  y2: (-stagePos.y + stageSize.height) / scale,
-});
+export const getVisibleRect = (viewport: Viewport, state: ViewportState) => {
+  // Получаем размеры экрана (видимого окна вьюпорта) в пикселях
+  const screenWidth = viewport.screenWidth;
+  const screenHeight = viewport.screenHeight;
+
+  // Рассчитываем, сколько экранных пикселей помещается в одну единицу мира при данном масштабе
+  // (Делим размеры экрана пополам, так как x и y камеры указывают на центр экрана)
+  const halfScreenWidthInWorld = screenWidth / 2 / state.scale;
+  const halfScreenHeightInWorld = screenHeight / 2 / state.scale;
+
+  // Левая верхняя точка (x1, y1)
+  const x1 = state.x - halfScreenWidthInWorld;
+  const y1 = state.y - halfScreenHeightInWorld;
+
+  // Правая нижняя точка (x2, y2)
+  const x2 = state.x + halfScreenWidthInWorld;
+  const y2 = state.y + halfScreenHeightInWorld;
+
+  return { x1, y1, x2, y2 };
+};
 
 /**
  * Вычисляет диапазон линий сетки для видимой области

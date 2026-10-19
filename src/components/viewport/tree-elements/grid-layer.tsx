@@ -1,29 +1,31 @@
 import type { Graphics } from 'pixi.js';
+import { Viewport } from 'pixi-viewport';
 
 import { GRID_MIN_SCALE } from '@/constants';
+import { ViewportState } from '@/types';
 import { getVisibleRect } from '@/utils/grid-helpers';
 
 type GridLayerProps = {
   gridSize: number;
   enabled: boolean;
   rotation: number;
-  stagePos: { x: number; y: number };
-  stageSize: { width: number; height: number };
-  scale: number;
+  viewport: Viewport;
+  viewportState: ViewportState;
 };
 
 export const GridLayer = ({
   gridSize,
   enabled,
   rotation,
-  stagePos,
-  stageSize,
-  scale,
+  viewport,
+  viewportState,
 }: GridLayerProps) => {
   if (!enabled) return null;
-  if (scale < GRID_MIN_SCALE) return null;
+  if (viewportState.scale < GRID_MIN_SCALE) return null;
 
-  const opacity = Math.min(1, (scale - GRID_MIN_SCALE) / (0.5 - GRID_MIN_SCALE));
+  console.log('gridlayer');
+
+  const opacity = Math.min(1, (viewportState.scale - GRID_MIN_SCALE) / (0.5 - GRID_MIN_SCALE));
   const baseOpacity = 0.2;
 
   return (
@@ -33,7 +35,7 @@ export const GridLayer = ({
         graphics.clear();
         graphics.fillStyle = '#FFFFFF';
 
-        const visibleRect = getVisibleRect(stagePos, stageSize, scale);
+        const visibleRect = getVisibleRect(viewport, viewportState);
 
         const corners = [
           { x: visibleRect.x1, y: visibleRect.y1 },

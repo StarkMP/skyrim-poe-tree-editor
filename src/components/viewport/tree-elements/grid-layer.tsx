@@ -23,8 +23,6 @@ export const GridLayer = ({
   if (!enabled) return null;
   if (viewportState.scale < GRID_MIN_SCALE) return null;
 
-  console.log('gridlayer');
-
   const opacity = Math.min(1, (viewportState.scale - GRID_MIN_SCALE) / (0.5 - GRID_MIN_SCALE));
   const baseOpacity = 0.2;
 

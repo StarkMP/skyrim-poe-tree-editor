@@ -1,34 +1,18 @@
-import { Gem, Hexagon, Image, Orbit, Search, Trash2 } from 'lucide-react';
 import List from 'rc-virtual-list';
 import { useRef, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { STONE_SELECTION_ID } from '@/constants';
 import { ElementType, useStore } from '@/store';
 
-const iconByType = {
-  node: <Hexagon size={16} />,
-  image: <Image size={16} />,
-  orbit: <Orbit size={16} />,
-  stone: <Gem size={16} />,
-} as const;
+import { ListElement } from './list-element';
 
 export const ElementsPanel = () => {
-  const {
-    nodes,
-    images,
-    orbits,
-    stoneSelection,
-    selectedElement,
-    selectElement,
-    deleteNode,
-    deleteImage,
-    deleteOrbit,
-    deleteStoneSelection,
-    requestCenterOnElement,
-  } = useStore();
+  const nodes = useStore((state) => state.nodes);
+  const images = useStore((state) => state.images);
+  const orbits = useStore((state) => state.orbits);
+  const stoneSelection = useStore((state) => state.stoneSelection);
   const parentRef = useRef<HTMLDivElement | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,36 +57,6 @@ export const ElementsPanel = () => {
     return matchesLabel || matchesPerkId;
   });
 
-  const handleCenterOnElement = (id: string, type: ElementType) => {
-    selectElement(id, type);
-    requestCenterOnElement(id, type);
-  };
-
-  const handleDelete = (id: string, type: ElementType) => {
-    switch (type) {
-      case 'node': {
-        deleteNode(id);
-
-        break;
-      }
-      case 'image': {
-        deleteImage(id);
-
-        break;
-      }
-      case 'orbit': {
-        deleteOrbit(id);
-
-        break;
-      }
-      case 'stone': {
-        deleteStoneSelection();
-
-        break;
-      }
-    }
-  };
-
   return (
     <TooltipProvider delayDuration={300}>
       <div className="size-full bg-background border-r flex flex-col">
@@ -131,53 +85,7 @@ export const ElementsPanel = () => {
               itemKey="id"
               className="size-full flex flex-col gap-1 p-2 pt-0"
             >
-              {(element) => (
-                <div
-                  key={element.id}
-                  className={`flex w-full items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
-                    selectedElement?.id === element.id && selectedElement?.type === element.type
-                      ? 'bg-accent'
-                      : 'hover:bg-accent/50'
-                  }`}
-                  onClick={() => selectElement(element.id, element.type)}
-                >
-                  <div className="flex items-center gap-2 w-full truncate">
-                    <span>{iconByType[element.type]}</span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="text-xs truncate">{element.label}</span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        <p>{element.label}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <div className="flex-1 flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCenterOnElement(element.id, element.type);
-                      }}
-                    >
-                      <Search className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(element.id, element.type);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+              {(element) => <ListElement key={element.id} element={element} />}
             </List>
           )}
         </div>

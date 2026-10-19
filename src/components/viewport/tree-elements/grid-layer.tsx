@@ -1,38 +1,39 @@
-import { Shape } from 'react-konva';
+import type { Graphics } from 'pixi.js';
+import { Viewport } from 'pixi-viewport';
 
-import { GRID_DOT_COLOR, GRID_MIN_SCALE } from '@/constants';
-import { getGridRange, getVisibleRect } from '@/utils/grid-helpers';
+import { GRID_MIN_SCALE } from '@/constants';
+import { ViewportState } from '@/types';
+import { getVisibleRect } from '@/utils/grid-helpers';
 
 type GridLayerProps = {
   gridSize: number;
   enabled: boolean;
   rotation: number;
-  stagePos: { x: number; y: number };
-  stageSize: { width: number; height: number };
-  scale: number;
+  viewport: Viewport;
+  viewportState: ViewportState;
 };
 
 export const GridLayer = ({
   gridSize,
   enabled,
   rotation,
-  stagePos,
-  stageSize,
-  scale,
+  viewport,
+  viewportState,
 }: GridLayerProps) => {
   if (!enabled) return null;
+  if (viewportState.scale < GRID_MIN_SCALE) return null;
 
-  if (scale < GRID_MIN_SCALE) return null;
-
-  const opacity = Math.min(1, (scale - GRID_MIN_SCALE) / (0.5 - GRID_MIN_SCALE));
+  const opacity = Math.min(1, (viewportState.scale - GRID_MIN_SCALE) / (0.5 - GRID_MIN_SCALE));
+  const baseOpacity = 0.2;
 
   return (
-    <Shape
-      sceneFunc={(context, shape) => {
-        const baseOpacity = 0.2;
-        context.fillStyle = `rgba(255, 255, 255, ${baseOpacity * opacity})`;
+    <pixiGraphics
+      alpha={baseOpacity * opacity}
+      draw={(graphics: Graphics) => {
+        graphics.clear();
+        graphics.fillStyle = '#FFFFFF';
 
-        const visibleRect = getVisibleRect(stagePos, stageSize, scale);
+        const visibleRect = getVisibleRect(viewport, viewportState);
 
         const corners = [
           { x: visibleRect.x1, y: visibleRect.y1 },
@@ -82,15 +83,12 @@ export const GridLayer = ({
             const worldX = x * forwardCos - y * forwardSin;
             const worldY = x * forwardSin + y * forwardCos;
 
-            context.beginPath();
-            context.arc(worldX, worldY, 2, 0, Math.PI * 2);
-            context.fill();
+            graphics.circle(worldX, worldY, 2);
+            graphics.fill();
           }
         }
-
-        context.fillStrokeShape(shape);
       }}
-      listening={false}
+      eventMode="none"
     />
   );
 };

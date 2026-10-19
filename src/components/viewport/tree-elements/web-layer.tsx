@@ -1,4 +1,4 @@
-import { Shape } from 'react-konva';
+import type { Graphics } from 'pixi.js';
 
 import { WEB_COLOR, WEB_LINE_WIDTH } from '@/constants';
 
@@ -22,19 +22,19 @@ export const WebLayer = ({
   if (!enabled) return null;
 
   return (
-    <Shape
-      sceneFunc={(context, shape) => {
-        context.strokeStyle = WEB_COLOR;
-        context.lineWidth = WEB_LINE_WIDTH;
+    <pixiGraphics
+      draw={(graphics: Graphics) => {
+        graphics.clear();
+        graphics.setStrokeStyle({ width: WEB_LINE_WIDTH, color: WEB_COLOR });
 
         const centerX = 0;
         const centerY = 0;
 
         const rotationRad = (rotation * Math.PI) / 180;
 
-        context.beginPath();
-        context.arc(centerX, centerY, size, 0, Math.PI * 2);
-        context.stroke();
+        graphics.beginPath();
+        graphics.arc(centerX, centerY, size, 0, Math.PI * 2);
+        graphics.stroke();
 
         for (let i = 0; i < spokes; i++) {
           const angle = ((Math.PI * 2) / spokes) * i + rotationRad;
@@ -44,30 +44,28 @@ export const WebLayer = ({
           const startX = centerX + Math.cos(angle) * innerRadius;
           const startY = centerY + Math.sin(angle) * innerRadius;
 
-          context.beginPath();
-          context.moveTo(startX, startY);
-          context.lineTo(endX, endY);
-          context.stroke();
+          graphics.beginPath();
+          graphics.moveTo(startX, startY);
+          graphics.lineTo(endX, endY);
+          graphics.stroke();
         }
 
         const radiusStep = (size - innerRadius) / (concentricCircles + 1);
 
         for (let i = 1; i <= concentricCircles; i++) {
           const radius = innerRadius + radiusStep * i;
-          context.beginPath();
-          context.arc(centerX, centerY, radius, 0, Math.PI * 2);
-          context.stroke();
+          graphics.beginPath();
+          graphics.arc(centerX, centerY, radius, 0, Math.PI * 2);
+          graphics.stroke();
         }
 
         if (innerRadius > 0) {
-          context.beginPath();
-          context.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
-          context.stroke();
+          graphics.beginPath();
+          graphics.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
+          graphics.stroke();
         }
-
-        context.fillStrokeShape(shape);
       }}
-      listening={false}
+      eventMode="none"
     />
   );
 };

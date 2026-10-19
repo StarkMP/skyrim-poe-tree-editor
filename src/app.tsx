@@ -3,11 +3,15 @@ import { useEffect, useState } from 'react';
 import { ElementsPanel } from '@/components/elements-panel';
 import { S3CredentialsModal } from '@/components/s3-credentials-modal';
 import { SettingsPanel } from '@/components/settings-panel';
-import { Viewport } from '@/components/viewport';
+import { Stage } from '@/components/viewport';
 import { useStore } from '@/store';
 
 export const App = () => {
-  const { undo, canUndo, isS3KeyValid, setS3SecretKey, loadGamePerksFromS3 } = useStore();
+  const undo = useStore(({ undo }) => undo);
+  const canUndo = useStore(({ canUndo }) => canUndo);
+  const isS3KeyValid = useStore(({ isS3KeyValid }) => isS3KeyValid);
+  const setS3SecretKey = useStore(({ setS3SecretKey }) => setS3SecretKey);
+  const loadGamePerksFromS3 = useStore(({ loadGamePerksFromS3 }) => loadGamePerksFromS3);
   const [showS3Modal, setShowS3Modal] = useState(!isS3KeyValid);
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export const App = () => {
     <>
       <div className="w-screen h-screen overflow-hidden grid grid-cols-[300px_1fr_300px]">
         <ElementsPanel />
-        <Viewport />
+        <Stage />
         <SettingsPanel />
       </div>
 

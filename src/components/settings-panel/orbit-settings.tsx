@@ -18,7 +18,7 @@ type OrbitSettingsProps = {
 };
 
 export const OrbitSettings = ({ orbitId, orbit }: OrbitSettingsProps) => {
-  const { updateOrbit } = useStore();
+  const updateOrbit = useStore((state) => state.updateOrbit);
 
   const handleRadiusChange = (value: number[]) => {
     updateOrbit(orbitId, { radius: value[0] });

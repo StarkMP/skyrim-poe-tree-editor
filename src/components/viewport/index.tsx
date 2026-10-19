@@ -1,36 +1,37 @@
-import type Konva from 'konva';
-import type { KonvaEventObject } from 'konva/lib/Node';
-import { useEffect, useRef, useState } from 'react';
-import { Layer, Stage } from 'react-konva';
+import { Application, extend } from '@pixi/react';
+import { Container, Graphics, Sprite } from 'pixi.js';
+import { type FederatedMouseEvent } from 'pixi.js';
+import { Viewport } from 'pixi-viewport';
+import { RefCallback, useCallback, useRef, useState } from 'react';
 
-import {
-  MAX_ZOOM,
-  MIN_ZOOM,
-  STONE_SELECTION_ID,
-  VIEWPORT_WORLD_SIZE,
-  ZOOM_SPEED,
-} from '@/constants';
-import { ElementType, useStore } from '@/store';
+import { STONE_SELECTION_ID, VIEWPORT_BACKGROUND_COLOR } from '@/constants';
+import { useStore } from '@/store';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
 
-import { BackgroundImage } from './background-image';
-import { ConnectionLine } from './connection-line';
+import { BackgroundImages } from './background-images';
+import { Connections } from './connections';
 import { ContextMenu } from './context-menu';
-import { GridLayer } from './grid-layer';
-import { NodeElement } from './node-element';
-import { OrbitElement } from './orbit-element';
-import { StoneSelectionElement } from './stone-selection-element';
-import { TempConnectionLine } from './temp-connection-line';
-import { WebLayer } from './web-layer';
+import { Grid } from './grid';
+import { Nodes } from './nodes';
+import { Orbits } from './orbits';
+import { StoneSelection } from './stone-selection';
+import { TempConnectionMoving } from './temp-connection-moving';
+import { TempConnectionsDragging } from './temp-connections-dragging';
+import { AppViewport } from './viewport';
+import { Web } from './web';
 
-export const Viewport = () => {
+extend({ Viewport, Container, Graphics, Sprite });
+
+const preventDefaultWheelRefCallback: RefCallback<HTMLDivElement> = (element) => {
+  if (!element) return;
+  const prevent = (e: WheelEvent) => e.preventDefault();
+  element.addEventListener('wheel', prevent);
+  return () => element.removeEventListener('wheel', prevent);
+};
+
+export const Stage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<Konva.Stage>(null);
-  const viewportUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [stageSize, setStageSize] = useState({
-    width: 0,
-    height: 0,
-  });
+
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -46,241 +47,48 @@ export const Viewport = () => {
     x: number;
     y: number;
   } | null>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [isDraggingElement, setIsDraggingElement] = useState(false);
-  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
-  const [draggingNodePos, setDraggingNodePos] = useState<{ x: number; y: number } | null>(null);
 
-  const [multiDragStartPositions, setMultiDragStartPositions] = useState<
-    Map<string, { x: number; y: number }>
-  >(new Map());
-  const [multiDragLeaderId, setMultiDragLeaderId] = useState<string | null>(null);
-  const [multiDraggingNodeIds, setMultiDraggingNodeIds] = useState<Set<string>>(new Set());
+  const hasStoneSelection = useStore((state) => !!state.stoneSelection);
+  const selectElement = useStore((state) => state.selectElement);
+  const addNode = useStore((state) => state.addNode);
+  const addImage = useStore((state) => state.addImage);
+  const addOrbit = useStore((state) => state.addOrbit);
+  const addStoneSelection = useStore((state) => state.addStoneSelection);
+  const deleteNode = useStore((state) => state.deleteNode);
+  const deleteImage = useStore((state) => state.deleteImage);
+  const deleteOrbit = useStore((state) => state.deleteOrbit);
+  const deleteStoneSelection = useStore((state) => state.deleteStoneSelection);
+  const removeAllConnections = useStore((state) => state.removeAllConnections);
 
-  const {
-    nodes,
-    images,
-    orbits,
-    stoneSelection,
-    connections,
-    selectedElement,
-    selectedElements,
-    multiSelectedElementsData,
-    viewportCenterRequest,
-    viewport,
-    gridSettings,
-    webSettings,
-    selectElement,
-    toggleElementSelection,
-    isElementSelected,
-    addNode,
-    addImage,
-    addOrbit,
-    addStoneSelection,
-    deleteNode,
-    deleteImage,
-    deleteOrbit,
-    deleteStoneSelection,
-    addConnection,
-    removeAllConnections,
-    updateViewport,
-    updateMultipleElements,
-    clearCenterRequest,
-  } = useStore();
+  const handleStageRightClick = useCallback((e: FederatedMouseEvent) => {
+    const viewport = e.target;
+    if (!viewport) return;
 
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage || !viewport) return;
-
-    // Only update if viewport state differs from current stage state
-    const currentPos = stage.position();
-    const currentScale = stage.scaleX();
-
-    if (
-      currentPos.x !== viewport.x ||
-      currentPos.y !== viewport.y ||
-      currentScale !== viewport.scale
-    ) {
-      stage.position({ x: viewport.x, y: viewport.y });
-      stage.scale({ x: viewport.scale, y: viewport.scale });
-      stage.batchDraw();
-    }
-  }, [viewport, stageSize]);
-
-  useEffect(() => {
-    if (!viewportCenterRequest || !stageRef.current) return;
-
-    const { id, type } = viewportCenterRequest;
-    const stage = stageRef.current;
-
-    let elementX = 0;
-    let elementY = 0;
-
-    if (type === 'node' && nodes[id]) {
-      elementX = nodes[id].x;
-      elementY = nodes[id].y;
-    } else if (type === 'image' && images[id]) {
-      elementX = images[id].x + images[id].width / 2;
-      elementY = images[id].y + images[id].height / 2;
-    } else if (type === 'orbit' && orbits[id]) {
-      elementX = orbits[id].x;
-      elementY = orbits[id].y;
-    } else if (type === 'stone' && stoneSelection) {
-      elementX = stoneSelection.x + stoneSelection.width / 2;
-      elementY = stoneSelection.y + stoneSelection.height / 2;
-    } else {
-      return;
-    }
-
-    const scale = stage.scaleX();
-    const newX = stageSize.width / 2 - elementX * scale;
-    const newY = stageSize.height / 2 - elementY * scale;
-
-    stage.position({ x: newX, y: newY });
-    stage.batchDraw();
-
-    clearCenterRequest();
-  }, [viewportCenterRequest?.timestamp, nodes, images, orbits, stageSize, clearCenterRequest]);
-
-  useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        setStageSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
-      }
-    };
-
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
-
-  const clampViewportPosition = (x: number, y: number, scale: number) => {
-    const halfWorld = VIEWPORT_WORLD_SIZE / 2;
-    const maxX = halfWorld * scale;
-    const minX = stageSize.width - halfWorld * scale;
-    const maxY = halfWorld * scale;
-    const minY = stageSize.height - halfWorld * scale;
-
-    return {
-      x: Math.max(minX, Math.min(maxX, x)),
-      y: Math.max(minY, Math.min(maxY, y)),
-    };
-  };
-
-  const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
-    e.evt.preventDefault();
-
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const oldScale = stage.scaleX();
-    const pointer = stage.getPointerPosition();
-    if (!pointer) return;
-
-    const mousePointTo = {
-      x: (pointer.x - stage.x()) / oldScale,
-      y: (pointer.y - stage.y()) / oldScale,
-    };
-
-    const direction = e.evt.deltaY > 0 ? -1 : 1;
-    const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, oldScale + direction * ZOOM_SPEED));
-
-    stage.scale({ x: newScale, y: newScale });
-
-    let newPos = {
-      x: pointer.x - mousePointTo.x * newScale,
-      y: pointer.y - mousePointTo.y * newScale,
-    };
-
-    newPos = clampViewportPosition(newPos.x, newPos.y, newScale);
-
-    stage.position(newPos);
-    stage.batchDraw();
-
-    // Debounced update to store - only update state after zoom completes
-    if (viewportUpdateTimerRef.current) {
-      clearTimeout(viewportUpdateTimerRef.current);
-    }
-
-    viewportUpdateTimerRef.current = setTimeout(() => {
-      updateViewport({
-        x: newPos.x,
-        y: newPos.y,
-        scale: newScale,
-      });
-    }, 100);
-  };
-
-  const handleDragEnd = () => {
-    const stage = stageRef.current;
-    if (stage) {
-      let pos = stage.position();
-      const scale = stage.scaleX();
-
-      pos = clampViewportPosition(pos.x, pos.y, scale);
-      stage.position(pos);
-
-      updateViewport({
-        x: pos.x,
-        y: pos.y,
-        scale,
-      });
-    }
-  };
-
-  const handleContextMenu = (e: KonvaEventObject<PointerEvent>) => {
-    e.evt.preventDefault();
-
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const pointerPos = stage.getPointerPosition();
-    if (!pointerPos) return;
-
-    const transform = stage.getAbsoluteTransform().copy().invert();
-    const canvasPos = transform.point(pointerPos);
+    const canvasPos = e.getLocalPosition(viewport);
 
     setContextMenu({
-      x: e.evt.clientX,
-      y: e.evt.clientY,
+      x: e.client.x,
+      y: e.client.y,
       canvasX: canvasPos.x,
       canvasY: canvasPos.y,
     });
-  };
+  }, []);
 
-  const handleMouseMove = (e: KonvaEventObject<MouseEvent>) => {
-    if (!isCreatingConnection) return;
+  const handleStageClick = useCallback(() => {
+    selectElement(null, null);
 
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const pointerPos = stage.getPointerPosition();
-    if (!pointerPos) return;
-
-    const transform = stage.getAbsoluteTransform().copy().invert();
-    const canvasPos = transform.point(pointerPos);
-
-    setMousePos(canvasPos);
-  };
-
-  const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
-    if (e.target === e.target.getStage()) {
-      selectElement(null, null);
-
-      if (isCreatingConnection) {
-        setIsCreatingConnection(false);
-        setConnectionStart(null);
-      }
+    if (isCreatingConnection) {
+      setIsCreatingConnection(false);
+      setConnectionStart(null);
     }
-  };
+  }, [isCreatingConnection, selectElement]);
 
   const handleCreateNode = () => {
     if (contextMenu) {
       let x = contextMenu.canvasX;
       let y = contextMenu.canvasY;
+
+      const { gridSettings } = useStore.getState();
 
       if (gridSettings.enabled) {
         const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
@@ -299,6 +107,8 @@ export const Viewport = () => {
       let x = contextMenu.canvasX;
       let y = contextMenu.canvasY;
 
+      const { gridSettings } = useStore.getState();
+
       if (gridSettings.enabled) {
         const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
         x = snapped.x;
@@ -312,6 +122,7 @@ export const Viewport = () => {
   };
 
   const handleStartConnection = (nodeId: string) => {
+    const { nodes } = useStore.getState();
     const node = nodes[nodeId];
     if (!node) return;
 
@@ -353,6 +164,8 @@ export const Viewport = () => {
       let x = contextMenu.canvasX;
       let y = contextMenu.canvasY;
 
+      const { gridSettings } = useStore.getState();
+
       if (gridSettings.enabled) {
         const snapped = snapToRotatedGrid(x, y, gridSettings.size, gridSettings.rotation);
         x = snapped.x;
@@ -370,22 +183,6 @@ export const Viewport = () => {
     setContextMenu(null);
   };
 
-  const handleStoneClick = (e?: MouseEvent) => {
-    const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
-    if (isMultiSelectKey) {
-      if (
-        selectedElement &&
-        !selectedElements.has(selectedElement.id) &&
-        selectedElement.type !== 'connection'
-      ) {
-        toggleElementSelection(selectedElement.id, selectedElement.type as ElementType);
-      }
-      toggleElementSelection(STONE_SELECTION_ID, 'stone');
-    } else {
-      selectElement(STONE_SELECTION_ID, 'stone');
-    }
-  };
-
   const handleStoneContextMenu = (x: number, y: number) => {
     setContextMenu({
       x,
@@ -397,22 +194,6 @@ export const Viewport = () => {
     });
   };
 
-  const handleOrbitClick = (orbitId: string, e?: MouseEvent) => {
-    const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
-    if (isMultiSelectKey) {
-      if (
-        selectedElement &&
-        !selectedElements.has(selectedElement.id) &&
-        selectedElement.type !== 'connection'
-      ) {
-        toggleElementSelection(selectedElement.id, selectedElement.type as ElementType);
-      }
-      toggleElementSelection(orbitId, 'orbit');
-    } else {
-      selectElement(orbitId, 'orbit');
-    }
-  };
-
   const handleOrbitContextMenu = (orbitId: string, x: number, y: number) => {
     setContextMenu({
       x,
@@ -422,44 +203,6 @@ export const Viewport = () => {
       targetId: orbitId,
       targetType: 'orbit',
     });
-  };
-
-  const handleNodeClick = (nodeId: string, e?: MouseEvent) => {
-    if (isCreatingConnection && connectionStart && connectionStart.nodeId !== nodeId) {
-      addConnection(connectionStart.nodeId, nodeId);
-      setIsCreatingConnection(false);
-      setConnectionStart(null);
-    } else {
-      const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
-      if (isMultiSelectKey) {
-        if (
-          selectedElement &&
-          !selectedElements.has(selectedElement.id) &&
-          selectedElement.type !== 'connection'
-        ) {
-          toggleElementSelection(selectedElement.id, selectedElement.type as ElementType);
-        }
-        toggleElementSelection(nodeId, 'node');
-      } else {
-        selectElement(nodeId, 'node');
-      }
-    }
-  };
-
-  const handleImageClick = (imageId: string, e?: MouseEvent) => {
-    const isMultiSelectKey = e?.shiftKey || e?.ctrlKey;
-    if (isMultiSelectKey) {
-      if (
-        selectedElement &&
-        !selectedElements.has(selectedElement.id) &&
-        selectedElement.type !== 'connection'
-      ) {
-        toggleElementSelection(selectedElement.id, selectedElement.type as ElementType);
-      }
-      toggleElementSelection(imageId, 'image');
-    } else {
-      selectElement(imageId, 'image');
-    }
   };
 
   const handleNodeContextMenu = (nodeId: string, x: number, y: number) => {
@@ -484,416 +227,68 @@ export const Viewport = () => {
     });
   };
 
-  const handleConnectionClick = (connectionId: string) => {
-    selectElement(connectionId, 'connection');
-  };
-
-  const handleMultiDragStart = (leaderId: string) => {
-    const startPositions = new Map<string, { x: number; y: number }>();
-    const draggingNodes = new Set<string>();
-
-    for (const [id, elementData] of multiSelectedElementsData.entries()) {
-      if (elementData.type === 'node' && nodes[id]) {
-        startPositions.set(id, { x: nodes[id].x, y: nodes[id].y });
-        draggingNodes.add(id);
-      } else if (elementData.type === 'image' && images[id]) {
-        startPositions.set(id, { x: images[id].x, y: images[id].y });
-      } else if (elementData.type === 'orbit' && orbits[id]) {
-        startPositions.set(id, { x: orbits[id].x, y: orbits[id].y });
-      } else if (elementData.type === 'stone' && stoneSelection) {
-        startPositions.set(id, { x: stoneSelection.x, y: stoneSelection.y });
-      }
-    }
-
-    setMultiDragStartPositions(startPositions);
-    setMultiDragLeaderId(leaderId);
-    setMultiDraggingNodeIds(draggingNodes);
-    setIsDraggingElement(true);
-  };
-
-  const handleMultiDragMove = (leaderId: string, newLeaderPos: { x: number; y: number }) => {
-    const startPos = multiDragStartPositions.get(leaderId);
-    if (!startPos) return;
-
-    const offsetX = newLeaderPos.x - startPos.x;
-    const offsetY = newLeaderPos.y - startPos.y;
-
-    const updates: Array<{
-      id: string;
-      type: ElementType;
-      updates: { x: number; y: number };
-    }> = [];
-
-    for (const [id, elementData] of multiSelectedElementsData.entries()) {
-      const startElementPos = multiDragStartPositions.get(id);
-      if (!startElementPos) continue;
-
-      updates.push({
-        id,
-        type: elementData.type,
-        updates: {
-          x: startElementPos.x + offsetX,
-          y: startElementPos.y + offsetY,
-        },
-      });
-    }
-
-    if (updates.length > 0) {
-      updateMultipleElements(updates);
-    }
-  };
-
-  const handleMultiDragEnd = (leaderId: string, finalLeaderPos: { x: number; y: number }) => {
-    const startPos = multiDragStartPositions.get(leaderId);
-    if (!startPos) {
-      setMultiDragStartPositions(new Map());
-      setMultiDragLeaderId(null);
-      setMultiDraggingNodeIds(new Set());
-      setIsDraggingElement(false);
-      return;
-    }
-
-    const offsetX = finalLeaderPos.x - startPos.x;
-    const offsetY = finalLeaderPos.y - startPos.y;
-
-    const updates: Array<{
-      id: string;
-      type: ElementType;
-      updates: { x: number; y: number };
-    }> = [];
-
-    for (const [id, elementData] of multiSelectedElementsData.entries()) {
-      const startElementPos = multiDragStartPositions.get(id);
-      if (!startElementPos) continue;
-
-      updates.push({
-        id,
-        type: elementData.type,
-        updates: {
-          x: startElementPos.x + offsetX,
-          y: startElementPos.y + offsetY,
-        },
-      });
-    }
-
-    if (updates.length > 0) {
-      updateMultipleElements(updates);
-    }
-
-    setMultiDragStartPositions(new Map());
-    setMultiDragLeaderId(null);
-    setMultiDraggingNodeIds(new Set());
-    setIsDraggingElement(false);
-  };
-
-  const isMultiSelectMode = selectedElements.size > 0;
-
   return (
-    <div ref={containerRef} className="size-full">
-      {stageSize.width > 0 && stageSize.height > 0 ? (
-        <Stage
-          ref={stageRef}
-          width={stageSize.width}
-          height={stageSize.height}
-          draggable={!isDraggingElement}
-          dragBoundFunc={(pos) => {
-            const stage = stageRef.current;
-            if (!stage) return pos;
-            const scale = stage.scaleX();
-            return clampViewportPosition(pos.x, pos.y, scale);
+    <div ref={preventDefaultWheelRefCallback} className="size-full">
+      <div ref={containerRef} className="size-full">
+        <Application
+          resizeTo={containerRef}
+          backgroundColor={VIEWPORT_BACKGROUND_COLOR}
+          antialias
+          autoStart
+          onInit={(app) => {
+            (window as any).__PIXI_APP__ = app;
           }}
-          onWheel={handleWheel}
-          onDragEnd={handleDragEnd}
-          onContextMenu={handleContextMenu}
-          onMouseMove={handleMouseMove}
-          onClick={handleStageClick}
         >
-          <Layer>
-            {/* Web Layer - above background, below grid */}
-            <WebLayer
-              enabled={webSettings.enabled}
-              size={webSettings.size}
-              spokes={webSettings.spokes}
-              rotation={webSettings.rotation}
-              innerRadius={webSettings.innerRadius}
-              concentricCircles={webSettings.concentricCircles}
+          <AppViewport onClick={handleStageClick} onRightClick={handleStageRightClick}>
+            <Web />
+
+            <Grid />
+
+            <BackgroundImages onContextMenu={handleImageContextMenu} />
+
+            <StoneSelection onContextMenu={handleStoneContextMenu} />
+
+            <Connections />
+
+            <TempConnectionsDragging />
+
+            <Nodes
+              isCreatingConnection={isCreatingConnection}
+              setIsCreatingConnection={setIsCreatingConnection}
+              connectionStart={connectionStart}
+              setConnectionStart={setConnectionStart}
+              onContextMenu={handleNodeContextMenu}
             />
 
-            {/* Grid */}
-            <GridLayer
-              gridSize={gridSettings.size}
-              enabled={gridSettings.enabled}
-              rotation={gridSettings.rotation}
-              stagePos={stageRef.current?.position() || { x: 0, y: 0 }}
-              stageSize={stageSize}
-              scale={stageRef.current?.scaleX() || 1}
-            />
+            <Orbits onContextMenu={handleOrbitContextMenu} />
 
-            {/* Background Images */}
-            {Object.entries(images).map(([id, image]) => (
-              <BackgroundImage
-                key={id}
-                id={id}
-                image={image}
-                isSelected={
-                  isMultiSelectMode
-                    ? isElementSelected(id)
-                    : selectedElement?.id === id
-                      ? selectedElement?.type === 'image'
-                      : null
-                }
-                onSelect={(e) => handleImageClick(id, e?.evt)}
-                onContextMenu={handleImageContextMenu}
-                onDragStart={() => {
-                  if (isMultiSelectMode && isElementSelected(id)) {
-                    handleMultiDragStart(id);
-                  } else {
-                    setIsDraggingElement(true);
-                  }
-                }}
-                onDragMove={(pos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === id) {
-                    handleMultiDragMove(id, pos);
-                  }
-                }}
-                onDragEnd={(finalPos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === id) {
-                    handleMultiDragEnd(id, finalPos);
-                  } else {
-                    setIsDraggingElement(false);
-                  }
-                }}
-              />
-            ))}
-
-            {/* Stone Selection (single instance, above background images) */}
-            {stoneSelection ? (
-              <StoneSelectionElement
-                stone={stoneSelection}
-                isSelected={
-                  isMultiSelectMode
-                    ? isElementSelected(STONE_SELECTION_ID)
-                    : selectedElement?.id === STONE_SELECTION_ID
-                      ? selectedElement?.type === 'stone'
-                      : null
-                }
-                onSelect={(e) => handleStoneClick(e?.evt)}
-                onContextMenu={handleStoneContextMenu}
-                onDragStart={() => {
-                  if (isMultiSelectMode && isElementSelected(STONE_SELECTION_ID)) {
-                    handleMultiDragStart(STONE_SELECTION_ID);
-                  } else {
-                    setIsDraggingElement(true);
-                  }
-                }}
-                onDragMove={(pos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === STONE_SELECTION_ID) {
-                    handleMultiDragMove(STONE_SELECTION_ID, pos);
-                  }
-                }}
-                onDragEnd={(finalPos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === STONE_SELECTION_ID) {
-                    handleMultiDragEnd(STONE_SELECTION_ID, finalPos);
-                  } else {
-                    setIsDraggingElement(false);
-                  }
-                }}
-              />
-            ) : null}
-
-            {/* Connections - middle z-index (hide if node is being dragged) */}
-            {Object.entries(connections).map(([connectionId, connection]) => {
-              const fromNode = nodes[connection.fromId];
-              const toNode = nodes[connection.toId];
-              if (!fromNode || !toNode) return null;
-
-              const isHidden =
-                (draggingNodeId &&
-                  (connection.fromId === draggingNodeId || connection.toId === draggingNodeId)) ||
-                (multiDraggingNodeIds.size > 0 &&
-                  (multiDraggingNodeIds.has(connection.fromId) ||
-                    multiDraggingNodeIds.has(connection.toId)));
-
-              return (
-                <ConnectionLine
-                  key={connectionId}
-                  from={fromNode}
-                  to={toNode}
-                  curvature={connection.curvature}
-                  isSelected={
-                    selectedElement?.id === connectionId
-                      ? selectedElement?.type === 'connection'
-                      : null
-                  }
-                  onSelect={() => handleConnectionClick(connectionId)}
-                  opacity={isHidden ? 0 : 1}
-                />
-              );
-            })}
-
-            {/* Temporary lines while dragging single node */}
-            {draggingNodeId && draggingNodePos
-              ? Object.entries(connections)
-                  .filter(
-                    ([, conn]) => conn.fromId === draggingNodeId || conn.toId === draggingNodeId
-                  )
-                  .map(([connId, connection]) => {
-                    const connectedId =
-                      connection.fromId === draggingNodeId ? connection.toId : connection.fromId;
-                    const connectedNode = nodes[connectedId];
-                    if (!connectedNode) return null;
-
-                    const shouldInvertCurvature =
-                      connection.fromId === connectedId && connection.toId === draggingNodeId;
-
-                    const curvature = connection.curvature ?? 0;
-                    const adjustedCurvature = shouldInvertCurvature ? -curvature : curvature;
-
-                    return (
-                      <TempConnectionLine
-                        key={`temp-${connId}`}
-                        from={draggingNodePos}
-                        to={{ x: connectedNode.x, y: connectedNode.y }}
-                        curvature={adjustedCurvature}
-                      />
-                    );
-                  })
-              : null}
-
-            {/* Temporary lines while dragging multiple nodes */}
-            {multiDraggingNodeIds.size > 0
-              ? Object.entries(connections)
-                  .filter(
-                    ([, conn]) =>
-                      multiDraggingNodeIds.has(conn.fromId) || multiDraggingNodeIds.has(conn.toId)
-                  )
-                  .map(([connId, connection]) => {
-                    const fromNode = nodes[connection.fromId];
-                    const toNode = nodes[connection.toId];
-                    if (!fromNode || !toNode) return null;
-
-                    const fromPos = { x: fromNode.x, y: fromNode.y };
-                    const toPos = { x: toNode.x, y: toNode.y };
-
-                    return (
-                      <TempConnectionLine
-                        key={`temp-multi-${connId}`}
-                        from={fromPos}
-                        to={toPos}
-                        curvature={connection.curvature ?? 0}
-                      />
-                    );
-                  })
-              : null}
-
-            {/* Nodes */}
-            {Object.entries(nodes).map(([id, node]) => (
-              <NodeElement
-                key={id}
-                id={id}
-                node={node}
-                isSelected={
-                  isMultiSelectMode
-                    ? isElementSelected(id)
-                    : selectedElement?.id === id
-                      ? selectedElement?.type === 'node'
-                      : null
-                }
-                onSelect={(e) => handleNodeClick(id, e?.evt)}
-                onContextMenu={handleNodeContextMenu}
-                onDragStart={() => {
-                  if (isMultiSelectMode && isElementSelected(id)) {
-                    handleMultiDragStart(id);
-                  } else {
-                    setIsDraggingElement(true);
-                    setDraggingNodeId(id);
-                    setDraggingNodePos({ x: node.x, y: node.y });
-                  }
-                }}
-                onDragMove={(pos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === id) {
-                    handleMultiDragMove(id, pos);
-                  }
-                  setDraggingNodePos(pos);
-                }}
-                onDragEnd={(finalPos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === id) {
-                    handleMultiDragEnd(id, finalPos);
-                  } else {
-                    setIsDraggingElement(false);
-                    setDraggingNodeId(null);
-                    setDraggingNodePos(null);
-                  }
-                }}
-              />
-            ))}
-
-            {/* Orbits - highest z-index (above nodes) */}
-            {Object.entries(orbits).map(([id, orbit]) => (
-              <OrbitElement
-                key={id}
-                id={id}
-                orbit={orbit}
-                isSelected={
-                  isMultiSelectMode
-                    ? isElementSelected(id)
-                    : selectedElement?.id === id
-                      ? selectedElement?.type === 'orbit'
-                      : null
-                }
-                onSelect={(e) => handleOrbitClick(id, e?.evt)}
-                onContextMenu={handleOrbitContextMenu}
-                onDragStart={() => {
-                  if (isMultiSelectMode && isElementSelected(id)) {
-                    handleMultiDragStart(id);
-                  } else {
-                    setIsDraggingElement(true);
-                  }
-                }}
-                onDragMove={(pos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === id) {
-                    handleMultiDragMove(id, pos);
-                  }
-                }}
-                onDragEnd={(finalPos) => {
-                  if (isMultiSelectMode && multiDragLeaderId === id) {
-                    handleMultiDragEnd(id, finalPos);
-                  } else {
-                    setIsDraggingElement(false);
-                  }
-                }}
-              />
-            ))}
-
-            {/* Temporary connection line */}
             {isCreatingConnection && connectionStart ? (
-              <TempConnectionLine from={connectionStart} to={mousePos} />
+              <TempConnectionMoving connectionStart={connectionStart} />
             ) : null}
-          </Layer>
-        </Stage>
-      ) : null}
+          </AppViewport>
+        </Application>
 
-      {/* Context Menu */}
-      {contextMenu ? (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          targetId={contextMenu.targetId}
-          targetType={contextMenu.targetType}
-          hasStoneSelection={!!stoneSelection}
-          onCreateNode={handleCreateNode}
-          onCreateImage={handleCreateImage}
-          onCreateOrbit={handleCreateOrbit}
-          onCreateStoneSelection={handleCreateStoneSelection}
-          onStartConnection={handleStartConnection}
-          onRemoveAllConnections={handleRemoveAllConnections}
-          onDeleteNode={handleDeleteNode}
-          onDeleteImage={handleDeleteImage}
-          onDeleteOrbit={handleDeleteOrbit}
-          onDeleteStoneSelection={handleDeleteStoneSelection}
-          onClose={() => setContextMenu(null)}
-        />
-      ) : null}
+        {contextMenu ? (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            targetId={contextMenu.targetId}
+            targetType={contextMenu.targetType}
+            hasStoneSelection={hasStoneSelection}
+            onCreateNode={handleCreateNode}
+            onCreateImage={handleCreateImage}
+            onCreateOrbit={handleCreateOrbit}
+            onCreateStoneSelection={handleCreateStoneSelection}
+            onStartConnection={handleStartConnection}
+            onRemoveAllConnections={handleRemoveAllConnections}
+            onDeleteNode={handleDeleteNode}
+            onDeleteImage={handleDeleteImage}
+            onDeleteOrbit={handleDeleteOrbit}
+            onDeleteStoneSelection={handleDeleteStoneSelection}
+            onClose={() => setContextMenu(null)}
+          />
+        ) : null}
+      </div>
     </div>
   );
 };

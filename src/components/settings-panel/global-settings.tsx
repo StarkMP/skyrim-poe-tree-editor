@@ -30,14 +30,12 @@ type GlobalSettingsProps = {
 };
 
 export const GlobalSettings = ({ onChangeS3Key, onUploadGamePerks }: GlobalSettingsProps) => {
-  const {
-    gridSettings,
-    updateGridSettings,
-    webSettings,
-    updateWebSettings,
-    globalSettingsExpanded,
-    setGlobalSettingsExpanded,
-  } = useStore();
+  const gridSettings = useStore((state) => state.gridSettings);
+  const updateGridSettings = useStore((state) => state.updateGridSettings);
+  const webSettings = useStore((state) => state.webSettings);
+  const updateWebSettings = useStore((state) => state.updateWebSettings);
+  const globalSettingsExpanded = useStore((state) => state.globalSettingsExpanded);
+  const setGlobalSettingsExpanded = useStore((state) => state.setGlobalSettingsExpanded);
 
   const handleValueChange = (value: string) => {
     setGlobalSettingsExpanded(value === 'global-settings');

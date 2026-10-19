@@ -19,7 +19,7 @@ type ImageSettingsProps = {
 };
 
 export const ImageSettings = ({ imageId, image }: ImageSettingsProps) => {
-  const { updateImage } = useStore();
+  const updateImage = useStore((state) => state.updateImage);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);

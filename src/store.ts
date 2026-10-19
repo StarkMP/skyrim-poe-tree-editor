@@ -145,7 +145,7 @@ export type Store = {
   selectElement: (id: string | null, type: SelectableType | null) => void;
   toggleElementSelection: (id: string, type: ElementType) => void;
   clearSelection: () => void;
-  isElementSelected: (id: string) => boolean;
+  isElementSelected: (id: string, type: SelectableType) => boolean;
 
   updateMultipleElements: (
     updates: Array<{
@@ -616,10 +616,12 @@ export const useStore = create<Store>((set, get) => {
     },
 
     selectElement: (id: string | null, type: SelectableType | null) => {
+      const { selectedElements, multiSelectedElementsData } = get();
       set({
         selectedElement: id && type ? { id, type } : null,
-        selectedElements: new Set(),
-        multiSelectedElementsData: new Map(),
+        selectedElements: selectedElements.size > 0 ? new Set() : selectedElements,
+        multiSelectedElementsData:
+          multiSelectedElementsData.size > 0 ? new Map() : multiSelectedElementsData,
       });
     },
 
@@ -652,9 +654,11 @@ export const useStore = create<Store>((set, get) => {
       });
     },
 
-    isElementSelected: (id: string) => {
+    isElementSelected: (id: string, type: SelectableType) => {
       const state = get();
-      return state.selectedElements.has(id) || state.selectedElement?.id === id;
+      const isMultiSelect = state.selectedElements.size > 0;
+      if (isMultiSelect) return state.selectedElements.has(id);
+      return state.selectedElement?.id === id && state.selectedElement?.type === type;
     },
 
     updateMultipleElements: (

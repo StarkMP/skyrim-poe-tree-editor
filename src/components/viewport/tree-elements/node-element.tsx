@@ -1,5 +1,5 @@
 import { type FederatedMouseEvent, type Graphics, Texture } from 'pixi.js';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import useImage from 'use-image';
 
 import extraLargeNodeBorder from '@/assets/extralarge-node-border.png';
@@ -9,6 +9,7 @@ import mediumNodeBorder from '@/assets/medium-node-border.png';
 import smallNodeBorder from '@/assets/small-node-border.png';
 import superLargeNodeBorder from '@/assets/superlarge-node-border.png';
 import { NODE_ICON_SIZE_PERCENT, SELECTION_COLOR, VIEWPORT_BACKGROUND_COLOR } from '@/constants';
+import { useAssets } from '@/lib/pixi';
 import { useStore } from '@/store';
 import { EditorNode, NodeType } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
@@ -53,12 +54,7 @@ export const NodeElement = ({
   const radius = getNodeRadius(node.type);
   const [iconImage] = useImage(node.iconUrl || '', 'anonymous');
   const [iconTexture, setIconTexture] = useState<Texture | null>(null);
-  const [borderImage] = useImage(nodeBorderImages[node.type] || '', 'anonymous');
-
-  const borderTexture = useMemo(
-    () => (borderImage ? Texture.from(borderImage) : null),
-    [borderImage]
-  );
+  const borderTexture = useAssets(nodeBorderImages[node.type]);
 
   const borderScale = 1.15;
   const borderSize = radius * 2 * borderScale;

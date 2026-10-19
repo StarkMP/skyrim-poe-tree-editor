@@ -1,8 +1,8 @@
-import { type FederatedMouseEvent, type Graphics, Rectangle, Texture } from 'pixi.js';
+import { type FederatedMouseEvent, type Graphics, Rectangle } from 'pixi.js';
 import { useMemo } from 'react';
-import useImage from 'use-image';
 
 import { IMAGE_BORDER_INACTIVE, SELECTION_COLOR } from '@/constants';
+import { useAssets } from '@/lib/pixi';
 import { useStore } from '@/store';
 import { EditorImage } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
@@ -32,8 +32,7 @@ export const BackgroundImage = ({
 }: BackgroundImageProps) => {
   const updateImage = useStore((state) => state.updateImage);
   const gridSettings = useStore((state) => state.gridSettings);
-  const [imageElement] = useImage(image.imageUrl || '', 'anonymous');
-  const texture = useMemo(() => (imageElement ? Texture.from(imageElement) : null), [imageElement]);
+  const texture = useAssets(image.imageUrl);
   const hitArea = useMemo(() => new Rectangle(0, 0, image.width, image.height), [image]);
 
   const snap = (pos: Position): Position => {
@@ -82,7 +81,7 @@ export const BackgroundImage = ({
   const rotation = image.rotation ?? 0;
   const rotationRad = (rotation * Math.PI) / 180;
 
-  const shouldDrawBorder = isSelected || !imageElement;
+  const shouldDrawBorder = isSelected || !texture;
   const stroke = isSelected ? SELECTION_COLOR : IMAGE_BORDER_INACTIVE;
   const strokeWidth = isSelected ? 4 : 2;
 

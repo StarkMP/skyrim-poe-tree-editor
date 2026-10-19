@@ -25,7 +25,7 @@ export const WebLayer = ({
     <pixiGraphics
       draw={(graphics: Graphics) => {
         graphics.clear();
-        graphics.lineStyle(WEB_LINE_WIDTH, WEB_COLOR, 1);
+        graphics.setStrokeStyle({ width: WEB_LINE_WIDTH, color: WEB_COLOR });
 
         const centerX = 0;
         const centerY = 0;

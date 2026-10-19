@@ -99,17 +99,17 @@ export const ConnectionLine = ({
         graphics.clear();
 
         // Invisible wider line for easier hover and click
-        graphics.lineStyle(20, 'transparent', 1);
+        graphics.setStrokeStyle({ width: 20, color: 'transparent' });
         drawPolyline(graphics, curvePoints);
         graphics.stroke();
 
         // Visible connection line border
-        graphics.lineStyle(borderWidth, borderColor, 1);
+        graphics.setStrokeStyle({ width: borderWidth, color: borderColor });
         drawPolyline(graphics, curvePoints);
         graphics.stroke();
 
         // Visible connection line
-        graphics.lineStyle(lineWidth, lineColor, 1);
+        graphics.setStrokeStyle({ width: lineWidth, color: lineColor });
         drawPolyline(graphics, curvePoints);
         graphics.stroke();
       }}

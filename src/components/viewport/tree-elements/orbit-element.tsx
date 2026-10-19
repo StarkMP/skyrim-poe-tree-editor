@@ -108,7 +108,7 @@ export const OrbitElement = ({
       <pixiGraphics
         draw={(graphics: Graphics) => {
           graphics.clear();
-          graphics.lineStyle(circleWidth, circleStroke, 1);
+          graphics.setStrokeStyle({ width: circleWidth, color: circleStroke });
           graphics.circle(0, 0, orbit.radius);
           graphics.stroke();
         }}
@@ -120,7 +120,7 @@ export const OrbitElement = ({
           graphics.fillStyle = centerFill;
           graphics.circle(0, 0, 10);
           graphics.fill();
-          graphics.lineStyle(2, centerStroke, 1);
+          graphics.setStrokeStyle({ width: 2, color: centerStroke });
           graphics.circle(0, 0, 10);
           graphics.stroke();
         }}
@@ -131,7 +131,7 @@ export const OrbitElement = ({
           draw={(graphics: Graphics) => {
             graphics.clear();
             graphics.fillStyle = pointFill;
-            graphics.lineStyle(1, pointStroke, 1);
+            graphics.setStrokeStyle({ width: 1, color: pointStroke });
             for (const point of orbitPoints) {
               const px = point.x - orbit.x;
               const py = point.y - orbit.y;
@@ -148,7 +148,7 @@ export const OrbitElement = ({
         <pixiGraphics
           draw={(graphics: Graphics) => {
             graphics.clear();
-            graphics.lineStyle(1, ORBIT_LINE_COLOR, 1);
+            graphics.setStrokeStyle({ width: 1, color: ORBIT_LINE_COLOR });
             for (const point of orbitPoints) {
               graphics.moveTo(0, 0);
               graphics.lineTo(point.x - orbit.x, point.y - orbit.y);

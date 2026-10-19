@@ -6,23 +6,13 @@ import { Connection } from '@/types';
 import { useDraggingNodesStore } from './dragging-nodes';
 import { TempConnectionLine } from './tree-elements/temp-connection-line';
 
-const filterNodeConnections = (nodeId: string | null, connections: [string, Connection][]) =>
-  nodeId ? connections.filter(([, conn]) => conn.fromId === nodeId || conn.toId === nodeId) : [];
-
-const filterMultiNodesConnections = (nodeIds: Set<string>, connections: [string, Connection][]) =>
-  nodeIds.size > 0
-    ? connections.filter(([, conn]) => nodeIds.has(conn.fromId) || nodeIds.has(conn.toId))
-    : [];
-
 export const TempConnectionsDragging = () => {
   const connections = useStore((state) => state.connections);
-  const nodes = useStore((state) => state.nodes);
 
   const draggingNodeId = useDraggingNodesStore(({ draggingNodeId }) => draggingNodeId);
   const multiDraggingNodeIds = useDraggingNodesStore(
     ({ multiDraggingNodeIds }) => multiDraggingNodeIds
   );
-  const draggingNodePos = useDraggingNodesStore(({ draggingNodePos }) => draggingNodePos);
 
   const connectionsArray = useMemo(() => Object.entries(connections), [connections]);
   const draggingNodeConnections = useMemo(
@@ -36,46 +26,65 @@ export const TempConnectionsDragging = () => {
 
   return (
     <pixiContainer>
-      {draggingNodeId && draggingNodePos
-        ? draggingNodeConnections.map(([connId, connection]) => {
-            const connectedId =
-              connection.fromId === draggingNodeId ? connection.toId : connection.fromId;
-            const connectedNode = nodes[connectedId];
-            if (!connectedNode) return null;
-
-            const shouldInvertCurvature =
-              connection.fromId === connectedId && connection.toId === draggingNodeId;
-
-            const curvature = connection.curvature ?? 0;
-            const adjustedCurvature = shouldInvertCurvature ? -curvature : curvature;
-
-            return (
-              <TempConnectionLine
-                key={`temp-${connId}`}
-                from={draggingNodePos}
-                to={{ x: connectedNode.x, y: connectedNode.y }}
-                curvature={adjustedCurvature}
-              />
-            );
-          })
+      {draggingNodeId
+        ? draggingNodeConnections.map(([connId, connection]) => (
+            <SingleDragTempConnection key={`temp-single-${connId}`} connection={connection} />
+          ))
         : null}
 
       {multiDraggingNodeIds.size > 0
-        ? multiDraggingNodeConnections.map(([connId, connection]) => {
-            const fromNode = nodes[connection.fromId];
-            const toNode = nodes[connection.toId];
-            if (!fromNode || !toNode) return null;
-
-            return (
-              <TempConnectionLine
-                key={`temp-multi-${connId}`}
-                from={{ x: fromNode.x, y: fromNode.y }}
-                to={{ x: toNode.x, y: toNode.y }}
-                curvature={connection.curvature ?? 0}
-              />
-            );
-          })
+        ? multiDraggingNodeConnections.map(([connId, connection]) => (
+            <MultiDragTempConnection key={`temp-multi-${connId}`} connection={connection} />
+          ))
         : null}
     </pixiContainer>
   );
 };
+
+const SingleDragTempConnection = ({ connection }: { connection: Connection }) => {
+  const draggingNodePos = useDraggingNodesStore(({ draggingNodePos }) => draggingNodePos);
+
+  const connectedId = useDraggingNodesStore(({ draggingNodeId }) =>
+    connection.fromId === draggingNodeId ? connection.toId : connection.fromId
+  );
+  const connectedNode = useStore((state) => state.nodes[connectedId]);
+  const shouldInvertCurvature = useDraggingNodesStore(
+    ({ draggingNodeId }) => connection.fromId === connectedId && connection.toId === draggingNodeId
+  );
+
+  if (!connectedNode || !draggingNodePos) return null;
+
+  const curvature = connection.curvature ?? 0;
+  const adjustedCurvature = shouldInvertCurvature ? -curvature : curvature;
+
+  return (
+    <TempConnectionLine
+      from={draggingNodePos}
+      to={{ x: connectedNode.x, y: connectedNode.y }}
+      curvature={adjustedCurvature}
+    />
+  );
+};
+
+const MultiDragTempConnection = ({ connection }: { connection: Connection }) => {
+  const fromNode = useStore((state) => state.nodes[connection.fromId]);
+  const toNode = useStore((state) => state.nodes[connection.toId]);
+
+  if (!fromNode || !toNode) return null;
+
+  return (
+    <TempConnectionLine
+      from={{ x: fromNode.x, y: fromNode.y }}
+      to={{ x: toNode.x, y: toNode.y }}
+      curvature={connection.curvature ?? 0}
+    />
+  );
+};
+
+const filterNodeConnections = (nodeId: string | null, connections: [string, Connection][]) =>
+  nodeId ? connections.filter(([, conn]) => conn.fromId === nodeId || conn.toId === nodeId) : [];
+
+const filterMultiNodesConnections = (nodeIds: Set<string>, connections: [string, Connection][]) =>
+  nodeIds.size > 0
+    ? connections.filter(([, conn]) => nodeIds.has(conn.fromId) || nodeIds.has(conn.toId))
+    : [];

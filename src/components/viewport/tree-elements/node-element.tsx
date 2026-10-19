@@ -169,7 +169,7 @@ export const NodeElement = ({
       <pixiGraphics
         draw={(graphics: Graphics) => {
           graphics.clear();
-          graphics.lineStyle(2, VIEWPORT_BACKGROUND_COLOR, 1);
+          graphics.setStrokeStyle({ width: 2, color: VIEWPORT_BACKGROUND_COLOR });
           graphics.circle(0, 0, outlineRadius);
           graphics.stroke();
         }}
@@ -179,7 +179,7 @@ export const NodeElement = ({
         <pixiGraphics
           draw={(graphics: Graphics) => {
             graphics.clear();
-            graphics.lineStyle(6, SELECTION_COLOR, 1);
+            graphics.setStrokeStyle({ width: 6, color: SELECTION_COLOR });
             graphics.circle(0, 0, radius);
             graphics.stroke();
           }}

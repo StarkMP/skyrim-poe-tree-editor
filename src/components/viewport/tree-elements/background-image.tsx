@@ -104,7 +104,7 @@ export const BackgroundImage = ({
         <pixiGraphics
           draw={(graphics: Graphics) => {
             graphics.clear();
-            graphics.lineStyle(strokeWidth, stroke, 1);
+            graphics.setStrokeStyle({ width: strokeWidth, color: stroke });
             graphics.rect(0, 0, image.width, image.height);
             graphics.stroke();
           }}

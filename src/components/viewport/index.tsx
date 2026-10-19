@@ -48,7 +48,7 @@ export const Stage = () => {
     y: number;
   } | null>(null);
 
-  const stoneSelection = useStore((state) => state.stoneSelection);
+  const hasStoneSelection = useStore((state) => !!state.stoneSelection);
   const selectElement = useStore((state) => state.selectElement);
   const addNode = useStore((state) => state.addNode);
   const addImage = useStore((state) => state.addImage);
@@ -274,7 +274,7 @@ export const Stage = () => {
             y={contextMenu.y}
             targetId={contextMenu.targetId}
             targetType={contextMenu.targetType}
-            hasStoneSelection={!!stoneSelection}
+            hasStoneSelection={hasStoneSelection}
             onCreateNode={handleCreateNode}
             onCreateImage={handleCreateImage}
             onCreateOrbit={handleCreateOrbit}

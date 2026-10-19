@@ -15,7 +15,7 @@ import { snapToRotatedGrid } from '@/utils/grid-helpers';
 import { getNodeRadius } from '@/utils/node-helpers';
 import { findClosestOrbitSnapPoint } from '@/utils/orbit-helpers';
 
-import { type Position, useElementDrag } from './use-element-drag';
+import { type Position, useElementDrag } from '../use-element-drag';
 
 const nodeBorderImages: Record<NodeType, string> = {
   [NodeType.ExtraSmallNode]: extraSmallNodeBorder,

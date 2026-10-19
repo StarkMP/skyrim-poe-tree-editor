@@ -14,7 +14,7 @@ import { PositionOrbit } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
 import { getOrbitPoints } from '@/utils/orbit-helpers';
 
-import { type Position, useElementDrag } from './use-element-drag';
+import { type Position, useElementDrag } from '../use-element-drag';
 
 type OrbitElementProps = {
   id: string;

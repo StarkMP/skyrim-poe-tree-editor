@@ -2,7 +2,7 @@ import { FederatedPointerEvent } from 'pixi.js';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useViewport } from './context';
-import { TempConnectionLine } from './temp-connection-line';
+import { TempConnectionLine } from './tree-elements/temp-connection-line';
 
 export const TempConnectionMoving = ({
   connectionStart,

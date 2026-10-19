@@ -7,7 +7,7 @@ import { useStore } from '@/store';
 import { EditorImage } from '@/types';
 import { snapToRotatedGrid } from '@/utils/grid-helpers';
 
-import { type Position, useElementDrag } from './use-element-drag';
+import { type Position, useElementDrag } from '../use-element-drag';
 
 type BackgroundImageProps = {
   id: string;
